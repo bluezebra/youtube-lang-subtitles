@@ -8,7 +8,28 @@
   const translationDelayStorageKey = "ytDualSubtitles.translationDelayMs";
   const sourceLanguageStorageKey = "ytDualSubtitles.sourceLanguage";
   const defaultSourceLanguage = "auto";
-  const allowedSourceLanguages = new Set(["auto", "fi", "es", "de", "fr", "sv", "ja", "ko"]);
+  const allowedSourceLanguages = new Set([
+    "auto",
+    "ar",
+    "zh-CN",
+    "zh-TW",
+    "nl",
+    "fi",
+    "fr",
+    "de",
+    "hi",
+    "it",
+    "ja",
+    "ko",
+    "no",
+    "pl",
+    "pt",
+    "ru",
+    "es",
+    "sv",
+    "tr",
+    "uk"
+  ]);
   const targetLanguage = "en";
   const staleCaptionDelayMs = 1500;
   const overlayHeightPx = 86;

@@ -4,16 +4,49 @@ const sourceLanguageStorageKey = "ytDualSubtitles.sourceLanguage";
 const defaultTranslationDelayMs = 200;
 const defaultSourceLanguage = "auto";
 const allowedTranslationDelayMs = new Set([100, 200, 350]);
-const allowedSourceLanguages = new Set(["auto", "fi", "es", "de", "fr", "sv", "ja", "ko"]);
+const allowedSourceLanguages = new Set([
+  "auto",
+  "ar",
+  "zh-CN",
+  "zh-TW",
+  "nl",
+  "fi",
+  "fr",
+  "de",
+  "hi",
+  "it",
+  "ja",
+  "ko",
+  "no",
+  "pl",
+  "pt",
+  "ru",
+  "es",
+  "sv",
+  "tr",
+  "uk"
+]);
 const sourceLanguageNames = {
+  ar: "Arabic",
   auto: "Auto-detect",
+  "zh-CN": "Chinese (Simplified)",
+  "zh-TW": "Chinese (Traditional)",
   de: "German",
+  nl: "Dutch",
   es: "Spanish",
   fi: "Finnish",
   fr: "French",
+  hi: "Hindi",
+  it: "Italian",
   ja: "Japanese",
   ko: "Korean",
-  sv: "Swedish"
+  no: "Norwegian",
+  pl: "Polish",
+  pt: "Portuguese",
+  ru: "Russian",
+  sv: "Swedish",
+  tr: "Turkish",
+  uk: "Ukrainian"
 };
 
 const enabledCheckbox = document.getElementById("enabled");
