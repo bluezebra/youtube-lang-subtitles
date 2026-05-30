@@ -30,9 +30,11 @@
     }
   }
 
-  function setHidden(element, hidden) {
-    if (element.hidden !== hidden) {
-      element.hidden = hidden;
+  function setInvisible(element, invisible) {
+    const visibility = invisible ? "hidden" : "visible";
+
+    if (element.style.visibility !== visibility) {
+      element.style.visibility = visibility;
     }
   }
 
@@ -96,7 +98,6 @@
 
     const targetLine = document.createElement("div");
     targetLine.id = targetLineId;
-    targetLine.hidden = true;
 
     overlay.append(sourceLine, targetLine);
     document.documentElement.appendChild(overlay);
@@ -110,11 +111,14 @@
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      gap: "6px",
+      justifyContent: "center",
+      gap: "4px",
+      boxSizing: "border-box",
+      height: "86px",
       minWidth: "min(640px, calc(100vw - 32px))",
       maxWidth: "min(900px, calc(100vw - 32px))",
-      padding: "12px 18px",
-      color: "#ffffff",
+      padding: "8px 18px",
+      color: "rgba(255, 255, 255, 0.88)",
       background: "rgba(8, 8, 8, 0.68)",
       borderRadius: "10px",
       boxShadow: "0 4px 18px rgba(0, 0, 0, 0.45)",
@@ -124,18 +128,26 @@
     });
 
     Object.assign(sourceLine.style, {
-      color: "#ffffff",
+      color: "rgba(255, 255, 255, 0.88)",
       fontSize: "24px",
       fontWeight: "700",
       lineHeight: "1.25",
+      width: "100%",
+      minHeight: "30px",
+      maxHeight: "30px",
+      overflow: "hidden",
       textShadow: "0 2px 4px rgba(0, 0, 0, 0.8)"
     });
 
     Object.assign(targetLine.style, {
-      color: "#ffffff",
+      color: "rgba(255, 255, 255, 0.88)",
       fontSize: "24px",
       fontWeight: "700",
       lineHeight: "1.25",
+      width: "100%",
+      minHeight: "30px",
+      maxHeight: "30px",
+      overflow: "hidden",
       textShadow: "0 2px 4px rgba(0, 0, 0, 0.8)"
     });
 
@@ -250,7 +262,7 @@
           return;
         }
 
-        setHidden(targetLine, false);
+        setInvisible(targetLine, false);
         setText(targetLine, translation);
       })
       .catch((error) => {
@@ -260,7 +272,7 @@
 
         const message = error instanceof Error ? error.message : String(error);
         console.error("YouTube Dual Subtitles translation failed", error);
-        setHidden(targetLine, false);
+        setInvisible(targetLine, false);
         setText(targetLine, `Translation failed (${message})`);
       });
   }
@@ -299,13 +311,13 @@
     setText(sourceLine, captionText);
 
     if (translationCache.has(captionText)) {
-      setHidden(targetLine, false);
+      setInvisible(targetLine, false);
       setText(targetLine, translationCache.get(captionText));
       return;
     }
 
     setText(targetLine, "");
-    setHidden(targetLine, true);
+    setInvisible(targetLine, true);
 
     if (requestedCaptionText !== captionText) {
       startTranslation(captionText, targetLine);
