@@ -3,6 +3,10 @@
     return String(text || "").replace(/\s+/g, " ").trim();
   }
 
+  function normalizeDebounceMs(value) {
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  }
+
   function createTranslationState(options) {
     const translate = options && options.translate;
 
@@ -10,10 +14,7 @@
       throw new Error("translate must be a function.");
     }
 
-    const debounceMs =
-      options && Number.isFinite(options.debounceMs) && options.debounceMs > 0
-        ? options.debounceMs
-        : 0;
+    let debounceMs = normalizeDebounceMs(options && options.debounceMs);
     const scheduleTimeout =
       (options && options.setTimeout) || ((callback, delay) => root.setTimeout(callback, delay));
     const clearScheduledTimeout =
@@ -81,6 +82,10 @@
       if (!isEnabled) {
         resetCaptionState();
       }
+    }
+
+    function setDebounceMs(value) {
+      debounceMs = normalizeDebounceMs(value);
     }
 
     function requestTranslation(normalizedCaptionText, requestId, handlers) {
@@ -197,6 +202,7 @@
     return {
       getTranslation,
       normalizeCaptionText,
+      setDebounceMs,
       setEnabled,
       updateCaption
     };
@@ -204,6 +210,7 @@
 
   const api = {
     createTranslationState,
+    normalizeDebounceMs,
     normalizeCaptionText
   };
 

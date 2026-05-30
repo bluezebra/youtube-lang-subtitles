@@ -5,14 +5,15 @@
   const targetLineId = "yt-dual-subtitles-target";
   const translateMessageType = "ytDualSubtitles.translate";
   const enabledStorageKey = "ytDualSubtitles.enabled";
+  const translationDelayStorageKey = "ytDualSubtitles.translationDelayMs";
   const sourceLanguage = "auto";
   const targetLanguage = "en";
   const staleCaptionDelayMs = 1500;
   const overlayHeightPx = 86;
-  const translationDebounceMs = 200;
+  const defaultTranslationDelayMs = 200;
 
   const translationState = YtDualSubtitlesTranslationState.createTranslationState({
-    debounceMs: translationDebounceMs,
+    debounceMs: defaultTranslationDelayMs,
     translate: translateWithGoogle
   });
 
@@ -375,38 +376,74 @@
     scheduleUpdate();
   }
 
-  function readEnabledSetting() {
+  function normalizeTranslationDelayMs(value) {
+    const numericValue = Number(value);
+
+    if ([100, 200, 350].includes(numericValue)) {
+      return numericValue;
+    }
+
+    return defaultTranslationDelayMs;
+  }
+
+  function setTranslationDelayMs(value) {
+    translationState.setDebounceMs(normalizeTranslationDelayMs(value));
+  }
+
+  function readSettings() {
     return new Promise((resolve) => {
-      chrome.storage.sync.get({ [enabledStorageKey]: true }, (items) => {
-        const runtimeError = chrome.runtime.lastError;
+      chrome.storage.sync.get(
+        {
+          [enabledStorageKey]: true,
+          [translationDelayStorageKey]: defaultTranslationDelayMs
+        },
+        (items) => {
+          const runtimeError = chrome.runtime.lastError;
 
-        if (runtimeError) {
-          console.error("YouTube Dual Subtitles could not read settings", runtimeError);
-          resolve(true);
-          return;
+          if (runtimeError) {
+            console.error("YouTube Dual Subtitles could not read settings", runtimeError);
+            resolve({
+              enabled: true,
+              translationDelayMs: defaultTranslationDelayMs
+            });
+            return;
+          }
+
+          resolve({
+            enabled: items[enabledStorageKey] !== false,
+            translationDelayMs: normalizeTranslationDelayMs(items[translationDelayStorageKey])
+          });
         }
-
-        resolve(items[enabledStorageKey] !== false);
-      });
+      );
     });
   }
 
-  function watchEnabledSetting() {
+  function watchSettings() {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       const enabledChange = changes[enabledStorageKey];
+      const translationDelayChange = changes[translationDelayStorageKey];
 
-      if (areaName !== "sync" || !enabledChange) {
+      if (areaName !== "sync") {
         return;
       }
 
-      setEnabled(enabledChange.newValue !== false);
+      if (enabledChange) {
+        setEnabled(enabledChange.newValue !== false);
+      }
+
+      if (translationDelayChange) {
+        setTranslationDelayMs(translationDelayChange.newValue);
+      }
     });
   }
 
   async function startLiveTranslation() {
-    isEnabled = await readEnabledSetting();
+    const settings = await readSettings();
+
+    isEnabled = settings.enabled;
     translationState.setEnabled(isEnabled);
-    watchEnabledSetting();
+    setTranslationDelayMs(settings.translationDelayMs);
+    watchSettings();
     updateOverlay();
 
     const observer = new MutationObserver(scheduleUpdate);

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YouTube Dual Subtitles",
-  "description": "Step 12: debounces rapid caption changes before translation.",
-  "version": "0.12.0",
+  "description": "Step 13: adds a popup setting for translation delay.",
+  "version": "0.13.0",
   "permissions": [
     "storage"
   ],

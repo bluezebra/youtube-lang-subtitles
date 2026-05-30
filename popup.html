@@ -31,6 +31,22 @@
         height: 18px;
       }
 
+      .field {
+        margin-top: 14px;
+      }
+
+      .field label {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 6px;
+        font: inherit;
+      }
+
       p {
         margin: 12px 0 0;
         color: #5f6368;
@@ -46,11 +62,19 @@
   <body>
     <h1>YouTube Dual Subtitles</h1>
     <label>
-      <input id="enabled" type="checkbox">
+      <input id="enabled" type="checkbox" disabled>
       Enable dual subtitles
     </label>
+    <div class="field">
+      <label for="translation-delay">Translation delay</label>
+      <select id="translation-delay" disabled>
+        <option value="100">Fast (100ms)</option>
+        <option value="200">Balanced (200ms)</option>
+        <option value="350">Smooth (350ms)</option>
+      </select>
+    </div>
     <p id="status">Loading setting...</p>
-    <p>Open a YouTube video with Finnish captions, then toggle this on or off.</p>
+    <p>Open a YouTube video with captions, then tune the delay for responsiveness or smoothness.</p>
     <script src="popup.js"></script>
   </body>
 </html>

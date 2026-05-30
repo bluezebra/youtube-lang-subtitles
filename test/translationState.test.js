@@ -278,3 +278,27 @@ test("debounces rapid partial caption changes before translating the latest capt
     { translation: "hello translated", captionText: "hello" }
   ]);
 });
+
+test("updates debounce delay for future caption requests", () => {
+  const scheduler = createManualScheduler();
+  const translatedTexts = [];
+  const state = createTranslationState({
+    debounceMs: 100,
+    setTimeout: scheduler.setTimeout,
+    clearTimeout: scheduler.clearTimeout,
+    translate(text) {
+      translatedTexts.push(text);
+      return `${text} translated`;
+    }
+  });
+
+  state.updateCaption("first");
+  assert.equal(scheduler.timers[0].delay, 100);
+
+  state.setDebounceMs(350);
+  state.updateCaption("second");
+
+  assert.equal(scheduler.timers[0].cleared, true);
+  assert.equal(scheduler.timers[1].delay, 350);
+  assert.deepEqual(translatedTexts, []);
+});
