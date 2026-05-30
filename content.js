@@ -1,5 +1,6 @@
 (function () {
   const overlayId = "yt-dual-subtitles-overlay";
+  const nativeCaptionStyleId = "yt-dual-subtitles-hide-native-captions";
   const sourceLineId = "yt-dual-subtitles-source";
   const targetLineId = "yt-dual-subtitles-target";
   const translateMessageType = "ytDualSubtitles.translate";
@@ -45,6 +46,32 @@
     }
   }
 
+  function setNativeCaptionsHidden(hidden) {
+    let style = document.getElementById(nativeCaptionStyleId);
+
+    if (!hidden) {
+      if (style) {
+        style.remove();
+      }
+
+      return;
+    }
+
+    if (style) {
+      return;
+    }
+
+    style = document.createElement("style");
+    style.id = nativeCaptionStyleId;
+    style.textContent = `
+      .ytp-caption-window-container {
+        opacity: 0 !important;
+        visibility: hidden !important;
+      }
+    `;
+    document.documentElement.appendChild(style);
+  }
+
   function createOverlay() {
     let overlay = document.getElementById(overlayId);
 
@@ -83,7 +110,6 @@
       padding: "12px 18px",
       color: "#ffffff",
       background: "rgba(0, 0, 0, 0.82)",
-      border: "2px solid #1a73e8",
       borderRadius: "10px",
       boxShadow: "0 4px 18px rgba(0, 0, 0, 0.45)",
       fontFamily: "Arial, sans-serif",
@@ -242,9 +268,12 @@
 
   function updateOverlay() {
     if (!isEnabled) {
+      setNativeCaptionsHidden(false);
       hideOverlay();
       return;
     }
+
+    setNativeCaptionsHidden(true);
 
     const overlay = createOverlay();
     const sourceLine = overlay.querySelector(`#${sourceLineId}`);
@@ -302,6 +331,7 @@
 
     if (!isEnabled) {
       resetCaptionState();
+      setNativeCaptionsHidden(false);
       hideOverlay();
       return;
     }
