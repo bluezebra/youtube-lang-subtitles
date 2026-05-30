@@ -1,11 +1,18 @@
 {
   "manifest_version": 3,
   "name": "YouTube Dual Subtitles",
-  "description": "Step 4: translates live Finnish YouTube captions and displays Finnish above English.",
-  "version": "0.4.0",
+  "description": "Step 5: translates live Finnish YouTube captions with an on/off popup control.",
+  "version": "0.5.0",
+  "permissions": [
+    "storage"
+  ],
   "host_permissions": [
     "https://translate.googleapis.com/*"
   ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "YouTube Dual Subtitles"
+  },
   "background": {
     "service_worker": "background.js"
   },

@@ -4,6 +4,7 @@
   const targetLineId = "yt-dual-subtitles-target";
   const statusLineId = "yt-dual-subtitles-status";
   const translateMessageType = "ytDualSubtitles.translate";
+  const enabledStorageKey = "ytDualSubtitles.enabled";
   const sourceLanguage = "fi";
   const targetLanguage = "en";
   const staleCaptionDelayMs = 1500;
@@ -11,6 +12,7 @@
   const translationCache = new Map();
   const pendingTranslations = new Map();
 
+  let isEnabled = true;
   let activeCaptionText = "";
   let lastCaptionText = "";
   let lastCaptionSeenAt = 0;
@@ -28,10 +30,27 @@
     }
   }
 
+  function resetCaptionState() {
+    activeCaptionText = "";
+    lastCaptionText = "";
+    lastCaptionSeenAt = 0;
+    requestedCaptionText = "";
+    activeTranslationRequestId += 1;
+  }
+
+  function hideOverlay() {
+    const overlay = document.getElementById(overlayId);
+
+    if (overlay) {
+      overlay.style.display = "none";
+    }
+  }
+
   function createOverlay() {
     let overlay = document.getElementById(overlayId);
 
     if (overlay) {
+      overlay.style.display = "flex";
       return overlay;
     }
 
@@ -218,7 +237,7 @@
 
     getTranslation(captionText)
       .then((translation) => {
-        if (requestId !== activeTranslationRequestId || captionText !== activeCaptionText) {
+        if (!isEnabled || requestId !== activeTranslationRequestId || captionText !== activeCaptionText) {
           return;
         }
 
@@ -226,7 +245,7 @@
         setText(targetLine, `English: ${translation}`);
       })
       .catch((error) => {
-        if (requestId !== activeTranslationRequestId || captionText !== activeCaptionText) {
+        if (!isEnabled || requestId !== activeTranslationRequestId || captionText !== activeCaptionText) {
           return;
         }
 
@@ -238,6 +257,11 @@
   }
 
   function updateOverlay() {
+    if (!isEnabled) {
+      hideOverlay();
+      return;
+    }
+
     const overlay = createOverlay();
     const sourceLine = overlay.querySelector(`#${sourceLineId}`);
     const targetLine = overlay.querySelector(`#${targetLineId}`);
@@ -288,7 +312,53 @@
     });
   }
 
-  function startLiveTranslation() {
+  function setEnabled(enabled) {
+    if (isEnabled === enabled) {
+      return;
+    }
+
+    isEnabled = enabled;
+
+    if (!isEnabled) {
+      resetCaptionState();
+      hideOverlay();
+      return;
+    }
+
+    scheduleUpdate();
+  }
+
+  function readEnabledSetting() {
+    return new Promise((resolve) => {
+      chrome.storage.sync.get({ [enabledStorageKey]: true }, (items) => {
+        const runtimeError = chrome.runtime.lastError;
+
+        if (runtimeError) {
+          console.error("YouTube Dual Subtitles could not read settings", runtimeError);
+          resolve(true);
+          return;
+        }
+
+        resolve(items[enabledStorageKey] !== false);
+      });
+    });
+  }
+
+  function watchEnabledSetting() {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      const enabledChange = changes[enabledStorageKey];
+
+      if (areaName !== "sync" || !enabledChange) {
+        return;
+      }
+
+      setEnabled(enabledChange.newValue !== false);
+    });
+  }
+
+  async function startLiveTranslation() {
+    isEnabled = await readEnabledSetting();
+    watchEnabledSetting();
     updateOverlay();
 
     const observer = new MutationObserver(scheduleUpdate);
