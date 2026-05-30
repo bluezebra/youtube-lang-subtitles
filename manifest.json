@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YouTube Dual Subtitles",
-  "description": "Step 20: allows English source selection.",
-  "version": "0.20.0",
+  "description": "Step 21: adds an overlay position setting.",
+  "version": "0.21.0",
   "permissions": [
     "storage"
   ],
@@ -24,6 +24,7 @@
       ],
       "js": [
         "src/languages.js",
+        "src/overlaySettings.js",
         "src/translationState.js",
         "src/overlayPosition.js",
         "content.js"

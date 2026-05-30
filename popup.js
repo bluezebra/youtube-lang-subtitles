@@ -1,6 +1,7 @@
 const enabledStorageKey = "ytDualSubtitles.enabled";
 const sourceLanguageStorageKey = "ytDualSubtitles.sourceLanguage";
 const targetLanguageStorageKey = "ytDualSubtitles.targetLanguage";
+const overlayPositionStorageKey = "ytDualSubtitles.overlayPosition";
 const {
   defaultSourceLanguage,
   defaultTargetLanguage,
@@ -10,10 +11,17 @@ const {
   sourceLanguageOptions,
   targetLanguageOptions
 } = YtDualSubtitlesLanguages;
+const {
+  defaultOverlayPosition,
+  normalizeOverlayPosition,
+  overlayPositionLabels,
+  overlayPositionOptions
+} = YtDualSubtitlesOverlaySettings;
 
 const enabledCheckbox = document.getElementById("enabled");
 const sourceLanguageSelect = document.getElementById("source-language");
 const targetLanguageSelect = document.getElementById("target-language");
+const overlayPositionSelect = document.getElementById("overlay-position");
 const statusText = document.getElementById("status");
 
 function setStatus(text) {
@@ -35,12 +43,17 @@ function setTargetLanguageSelectEnabled(language) {
   targetLanguageSelect.disabled = false;
 }
 
-function populateLanguageSelect(select, options) {
+function setOverlayPositionSelectEnabled(position) {
+  overlayPositionSelect.value = normalizeOverlayPosition(position);
+  overlayPositionSelect.disabled = false;
+}
+
+function populateSelect(select, options, valueProperty, labelProperty) {
   const optionElements = options.map((option) => {
     const optionElement = document.createElement("option");
 
-    optionElement.value = option.code;
-    optionElement.textContent = option.name;
+    optionElement.value = option[valueProperty];
+    optionElement.textContent = option[labelProperty];
 
     return optionElement;
   });
@@ -48,14 +61,16 @@ function populateLanguageSelect(select, options) {
   select.replaceChildren(...optionElements);
 }
 
-populateLanguageSelect(sourceLanguageSelect, sourceLanguageOptions);
-populateLanguageSelect(targetLanguageSelect, targetLanguageOptions);
+populateSelect(sourceLanguageSelect, sourceLanguageOptions, "code", "name");
+populateSelect(targetLanguageSelect, targetLanguageOptions, "code", "name");
+populateSelect(overlayPositionSelect, overlayPositionOptions, "value", "label");
 
 chrome.storage.sync.get(
   {
     [enabledStorageKey]: true,
     [sourceLanguageStorageKey]: defaultSourceLanguage,
-    [targetLanguageStorageKey]: defaultTargetLanguage
+    [targetLanguageStorageKey]: defaultTargetLanguage,
+    [overlayPositionStorageKey]: defaultOverlayPosition
   },
   (items) => {
     const runtimeError = chrome.runtime.lastError;
@@ -63,6 +78,7 @@ chrome.storage.sync.get(
       enabledCheckbox.disabled = true;
       sourceLanguageSelect.disabled = true;
       targetLanguageSelect.disabled = true;
+      overlayPositionSelect.disabled = true;
       setStatus(`Could not load setting: ${runtimeError.message}`);
       return;
     }
@@ -70,6 +86,7 @@ chrome.storage.sync.get(
     setCheckboxEnabled(items[enabledStorageKey] !== false);
     setSourceLanguageSelectEnabled(items[sourceLanguageStorageKey]);
     setTargetLanguageSelectEnabled(items[targetLanguageStorageKey]);
+    setOverlayPositionSelectEnabled(items[overlayPositionStorageKey]);
   }
 );
 
@@ -123,5 +140,23 @@ targetLanguageSelect.addEventListener("change", () => {
 
     setTargetLanguageSelectEnabled(targetLanguage);
     setStatus(`Target language set to ${languageNames[targetLanguage]}.`);
+  });
+});
+
+overlayPositionSelect.addEventListener("change", () => {
+  overlayPositionSelect.disabled = true;
+  const overlayPosition = normalizeOverlayPosition(overlayPositionSelect.value);
+
+  chrome.storage.sync.set({ [overlayPositionStorageKey]: overlayPosition }, () => {
+    const runtimeError = chrome.runtime.lastError;
+
+    if (runtimeError) {
+      overlayPositionSelect.disabled = false;
+      setStatus(`Could not save position: ${runtimeError.message}`);
+      return;
+    }
+
+    setOverlayPositionSelectEnabled(overlayPosition);
+    setStatus(`Position set to ${overlayPositionLabels[overlayPosition]}.`);
   });
 });

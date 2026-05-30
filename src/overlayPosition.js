@@ -7,14 +7,35 @@
     return Number.isFinite(value) && value > 0;
   }
 
+  function calculateDesiredBottom(playerRect, viewport, settings) {
+    const edgeOffset = clamp(
+      playerRect.height * settings.edgeRatio,
+      settings.verticalMargin,
+      settings.maxEdgeOffset
+    );
+
+    if (settings.verticalPosition === "top") {
+      return viewport.height - playerRect.top - edgeOffset - settings.overlayHeight;
+    }
+
+    if (settings.verticalPosition === "middle") {
+      return viewport.height - playerRect.top - playerRect.height / 2 - settings.overlayHeight / 2;
+    }
+
+    return viewport.height - playerRect.bottom + edgeOffset;
+  }
+
   function calculateOverlayPosition(playerRect, viewport, options) {
-    const settings = options || {};
-    const horizontalMargin = settings.horizontalMargin || 16;
-    const verticalMargin = settings.verticalMargin || 16;
-    const maxWidth = settings.maxWidth || 900;
-    const overlayHeight = settings.overlayHeight || 86;
-    const bottomRatio = settings.bottomRatio || 0.1;
-    const maxBottomOffset = settings.maxBottomOffset || 72;
+    const optionsWithDefaults = options || {};
+    const settings = {
+      edgeRatio: optionsWithDefaults.edgeRatio || 0.1,
+      horizontalMargin: optionsWithDefaults.horizontalMargin || 16,
+      maxEdgeOffset: optionsWithDefaults.maxEdgeOffset || 72,
+      maxWidth: optionsWithDefaults.maxWidth || 900,
+      overlayHeight: optionsWithDefaults.overlayHeight || 86,
+      verticalMargin: optionsWithDefaults.verticalMargin || 16,
+      verticalPosition: optionsWithDefaults.verticalPosition || "bottom"
+    };
 
     if (
       !playerRect ||
@@ -27,26 +48,24 @@
       return null;
     }
 
-    const playerAvailableWidth = Math.max(0, playerRect.width - horizontalMargin * 2);
-    const viewportAvailableWidth = Math.max(0, viewport.width - horizontalMargin * 2);
-    const width = Math.min(maxWidth, playerAvailableWidth, viewportAvailableWidth);
+    const playerAvailableWidth = Math.max(0, playerRect.width - settings.horizontalMargin * 2);
+    const viewportAvailableWidth = Math.max(0, viewport.width - settings.horizontalMargin * 2);
+    const width = Math.min(settings.maxWidth, playerAvailableWidth, viewportAvailableWidth);
 
     if (!isUsableNumber(width)) {
       return null;
     }
 
-    const minLeft = horizontalMargin + width / 2;
-    const maxLeft = viewport.width - horizontalMargin - width / 2;
+    const minLeft = settings.horizontalMargin + width / 2;
+    const maxLeft = viewport.width - settings.horizontalMargin - width / 2;
     const desiredLeft = playerRect.left + playerRect.width / 2;
     const left = clamp(desiredLeft, minLeft, Math.max(minLeft, maxLeft));
-    const bottomInsidePlayer = clamp(
-      playerRect.height * bottomRatio,
-      verticalMargin,
-      maxBottomOffset
+    const desiredBottom = calculateDesiredBottom(playerRect, viewport, settings);
+    const maxBottom = Math.max(
+      settings.verticalMargin,
+      viewport.height - settings.overlayHeight - settings.verticalMargin
     );
-    const desiredBottom = viewport.height - playerRect.bottom + bottomInsidePlayer;
-    const maxBottom = Math.max(verticalMargin, viewport.height - overlayHeight - verticalMargin);
-    const bottom = clamp(desiredBottom, verticalMargin, maxBottom);
+    const bottom = clamp(desiredBottom, settings.verticalMargin, maxBottom);
 
     return {
       left,

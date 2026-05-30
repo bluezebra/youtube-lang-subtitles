@@ -7,12 +7,17 @@
   const enabledStorageKey = "ytDualSubtitles.enabled";
   const sourceLanguageStorageKey = "ytDualSubtitles.sourceLanguage";
   const targetLanguageStorageKey = "ytDualSubtitles.targetLanguage";
+  const overlayPositionStorageKey = "ytDualSubtitles.overlayPosition";
   const {
     defaultSourceLanguage,
     defaultTargetLanguage,
     normalizeSourceLanguage,
     normalizeTargetLanguage
   } = YtDualSubtitlesLanguages;
+  const {
+    defaultOverlayPosition,
+    normalizeOverlayPosition
+  } = YtDualSubtitlesOverlaySettings;
   const staleCaptionDelayMs = 1500;
   const overlayHeightPx = 86;
   const subtitleLineHeightPx = 30;
@@ -29,6 +34,7 @@
   let lastCaptionSeenAt = 0;
   let sourceLanguage = defaultSourceLanguage;
   let targetLanguage = defaultTargetLanguage;
+  let overlayVerticalPosition = defaultOverlayPosition;
   let updateScheduled = false;
 
   function normalizeCaptionText(text) {
@@ -130,7 +136,8 @@
       getPlayerRect(),
       getViewportSize(),
       {
-        overlayHeight: overlayHeightPx
+        overlayHeight: overlayHeightPx,
+        verticalPosition: overlayVerticalPosition
       }
     );
 
@@ -410,13 +417,25 @@
     scheduleUpdate();
   }
 
+  function setOverlayPosition(value) {
+    const normalizedPosition = normalizeOverlayPosition(value);
+
+    if (overlayVerticalPosition === normalizedPosition) {
+      return;
+    }
+
+    overlayVerticalPosition = normalizedPosition;
+    scheduleUpdate();
+  }
+
   function readSettings() {
     return new Promise((resolve) => {
       chrome.storage.sync.get(
         {
           [enabledStorageKey]: true,
           [sourceLanguageStorageKey]: defaultSourceLanguage,
-          [targetLanguageStorageKey]: defaultTargetLanguage
+          [targetLanguageStorageKey]: defaultTargetLanguage,
+          [overlayPositionStorageKey]: defaultOverlayPosition
         },
         (items) => {
           const runtimeError = chrome.runtime.lastError;
@@ -426,7 +445,8 @@
             resolve({
               enabled: true,
               sourceLanguage: defaultSourceLanguage,
-              targetLanguage: defaultTargetLanguage
+              targetLanguage: defaultTargetLanguage,
+              overlayPosition: defaultOverlayPosition
             });
             return;
           }
@@ -434,7 +454,8 @@
           resolve({
             enabled: items[enabledStorageKey] !== false,
             sourceLanguage: normalizeSourceLanguage(items[sourceLanguageStorageKey]),
-            targetLanguage: normalizeTargetLanguage(items[targetLanguageStorageKey])
+            targetLanguage: normalizeTargetLanguage(items[targetLanguageStorageKey]),
+            overlayPosition: normalizeOverlayPosition(items[overlayPositionStorageKey])
           });
         }
       );
@@ -446,6 +467,7 @@
       const enabledChange = changes[enabledStorageKey];
       const sourceLanguageChange = changes[sourceLanguageStorageKey];
       const targetLanguageChange = changes[targetLanguageStorageKey];
+      const overlayPositionChange = changes[overlayPositionStorageKey];
 
       if (areaName !== "sync") {
         return;
@@ -463,6 +485,9 @@
         setTargetLanguage(targetLanguageChange.newValue);
       }
 
+      if (overlayPositionChange) {
+        setOverlayPosition(overlayPositionChange.newValue);
+      }
     });
   }
 
@@ -472,6 +497,7 @@
     isEnabled = settings.enabled;
     sourceLanguage = settings.sourceLanguage;
     targetLanguage = settings.targetLanguage;
+    overlayVerticalPosition = settings.overlayPosition;
     translationState.setEnabled(isEnabled);
     watchSettings();
     updateOverlay();
