@@ -7,52 +7,12 @@
   const enabledStorageKey = "ytDualSubtitles.enabled";
   const sourceLanguageStorageKey = "ytDualSubtitles.sourceLanguage";
   const targetLanguageStorageKey = "ytDualSubtitles.targetLanguage";
-  const defaultSourceLanguage = "auto";
-  const defaultTargetLanguage = "en";
-  const allowedSourceLanguages = new Set([
-    "auto",
-    "ar",
-    "zh-CN",
-    "zh-TW",
-    "nl",
-    "fi",
-    "fr",
-    "de",
-    "hi",
-    "it",
-    "ja",
-    "ko",
-    "no",
-    "pl",
-    "pt",
-    "ru",
-    "es",
-    "sv",
-    "tr",
-    "uk"
-  ]);
-  const allowedTargetLanguages = new Set([
-    "en",
-    "ar",
-    "zh-CN",
-    "zh-TW",
-    "nl",
-    "fi",
-    "fr",
-    "de",
-    "hi",
-    "it",
-    "ja",
-    "ko",
-    "no",
-    "pl",
-    "pt",
-    "ru",
-    "es",
-    "sv",
-    "tr",
-    "uk"
-  ]);
+  const {
+    defaultSourceLanguage,
+    defaultTargetLanguage,
+    normalizeSourceLanguage,
+    normalizeTargetLanguage
+  } = YtDualSubtitlesLanguages;
   const staleCaptionDelayMs = 1500;
   const overlayHeightPx = 86;
   const subtitleLineHeightPx = 30;
@@ -424,26 +384,6 @@
     }
 
     scheduleUpdate();
-  }
-
-  function normalizeSourceLanguage(value) {
-    const language = String(value || "");
-
-    if (allowedSourceLanguages.has(language)) {
-      return language;
-    }
-
-    return defaultSourceLanguage;
-  }
-
-  function normalizeTargetLanguage(value) {
-    const language = String(value || "");
-
-    if (allowedTargetLanguages.has(language)) {
-      return language;
-    }
-
-    return defaultTargetLanguage;
   }
 
   function setSourceLanguage(value) {

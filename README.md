@@ -4,7 +4,7 @@ A small Brave/Chrome extension for experimenting with dual subtitles on YouTube.
 
 ## Current step
 
-Step 18 is implemented. On YouTube, the extension reads the currently displayed caption and shows:
+Step 19 is implemented. On YouTube, the extension reads the currently displayed caption and shows:
 
 - The live YouTube caption text on top
 - The Google Translate result underneath, using popup-selected source and target languages
@@ -27,6 +27,7 @@ While enabled, YouTube's native caption layer is hidden so only the extension's 
 
 - `manifest.json` - Manifest V3 extension definition.
 - `content.js` - Runs on YouTube and renders the subtitle overlay.
+- `src/languages.js` - Defines shared source and target language options.
 - `src/overlayPosition.js` - Calculates the overlay position relative to the YouTube player.
 - `background.js` - Calls Google Translate from the extension service worker.
 - `popup.html` - Extension popup UI.

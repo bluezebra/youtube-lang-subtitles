@@ -1,75 +1,16 @@
 const enabledStorageKey = "ytDualSubtitles.enabled";
 const sourceLanguageStorageKey = "ytDualSubtitles.sourceLanguage";
 const targetLanguageStorageKey = "ytDualSubtitles.targetLanguage";
-const defaultSourceLanguage = "auto";
-const defaultTargetLanguage = "en";
-const allowedSourceLanguages = new Set([
-  "auto",
-  "ar",
-  "zh-CN",
-  "zh-TW",
-  "nl",
-  "fi",
-  "fr",
-  "de",
-  "hi",
-  "it",
-  "ja",
-  "ko",
-  "no",
-  "pl",
-  "pt",
-  "ru",
-  "es",
-  "sv",
-  "tr",
-  "uk"
-]);
-const allowedTargetLanguages = new Set([
-  "en",
-  "ar",
-  "zh-CN",
-  "zh-TW",
-  "nl",
-  "fi",
-  "fr",
-  "de",
-  "hi",
-  "it",
-  "ja",
-  "ko",
-  "no",
-  "pl",
-  "pt",
-  "ru",
-  "es",
-  "sv",
-  "tr",
-  "uk"
-]);
-const languageNames = {
-  ar: "Arabic",
-  auto: "Auto-detect",
-  "zh-CN": "Chinese (Simplified)",
-  "zh-TW": "Chinese (Traditional)",
-  de: "German",
-  en: "English",
-  nl: "Dutch",
-  es: "Spanish",
-  fi: "Finnish",
-  fr: "French",
-  hi: "Hindi",
-  it: "Italian",
-  ja: "Japanese",
-  ko: "Korean",
-  no: "Norwegian",
-  pl: "Polish",
-  pt: "Portuguese",
-  ru: "Russian",
-  sv: "Swedish",
-  tr: "Turkish",
-  uk: "Ukrainian"
-};
+const {
+  defaultSourceLanguage,
+  defaultTargetLanguage,
+  languageNames,
+  normalizeSourceLanguage,
+  normalizeTargetLanguage,
+  sourceLanguageOptions,
+  targetLanguageOptions
+} = YtDualSubtitlesLanguages;
+
 const enabledCheckbox = document.getElementById("enabled");
 const sourceLanguageSelect = document.getElementById("source-language");
 const targetLanguageSelect = document.getElementById("target-language");
@@ -84,26 +25,6 @@ function setCheckboxEnabled(enabled) {
   enabledCheckbox.disabled = false;
 }
 
-function normalizeSourceLanguage(value) {
-  const language = String(value || "");
-
-  if (allowedSourceLanguages.has(language)) {
-    return language;
-  }
-
-  return defaultSourceLanguage;
-}
-
-function normalizeTargetLanguage(value) {
-  const language = String(value || "");
-
-  if (allowedTargetLanguages.has(language)) {
-    return language;
-  }
-
-  return defaultTargetLanguage;
-}
-
 function setSourceLanguageSelectEnabled(language) {
   sourceLanguageSelect.value = normalizeSourceLanguage(language);
   sourceLanguageSelect.disabled = false;
@@ -113,6 +34,22 @@ function setTargetLanguageSelectEnabled(language) {
   targetLanguageSelect.value = normalizeTargetLanguage(language);
   targetLanguageSelect.disabled = false;
 }
+
+function populateLanguageSelect(select, options) {
+  const optionElements = options.map((option) => {
+    const optionElement = document.createElement("option");
+
+    optionElement.value = option.code;
+    optionElement.textContent = option.name;
+
+    return optionElement;
+  });
+
+  select.replaceChildren(...optionElements);
+}
+
+populateLanguageSelect(sourceLanguageSelect, sourceLanguageOptions);
+populateLanguageSelect(targetLanguageSelect, targetLanguageOptions);
 
 chrome.storage.sync.get(
   {
@@ -149,7 +86,6 @@ enabledCheckbox.addEventListener("change", () => {
       setStatus(`Could not save setting: ${runtimeError.message}`);
       return;
     }
-    setCheckboxEnabled(enabled);
     setCheckboxEnabled(enabled);
   });
 });
