@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YouTube Dual Subtitles",
-  "description": "Step 17: simplifies the popup controls.",
-  "version": "0.17.0",
+  "description": "Step 18: removes redundant popup status text.",
+  "version": "0.18.0",
   "permissions": [
     "storage"
   ],

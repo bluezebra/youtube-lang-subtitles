@@ -4,7 +4,7 @@ A small Brave/Chrome extension for experimenting with dual subtitles on YouTube.
 
 ## Current step
 
-Step 17 is implemented. On YouTube, the extension reads the currently displayed caption and shows:
+Step 18 is implemented. On YouTube, the extension reads the currently displayed caption and shows:
 
 - The live YouTube caption text on top
 - The Google Translate result underneath, using popup-selected source and target languages

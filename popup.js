@@ -133,7 +133,6 @@ chrome.storage.sync.get(
     setCheckboxEnabled(items[enabledStorageKey] !== false);
     setSourceLanguageSelectEnabled(items[sourceLanguageStorageKey]);
     setTargetLanguageSelectEnabled(items[targetLanguageStorageKey]);
-    setStatus(enabledCheckbox.checked ? "Dual subtitles are enabled." : "Dual subtitles are disabled.");
   }
 );
 
@@ -150,9 +149,8 @@ enabledCheckbox.addEventListener("change", () => {
       setStatus(`Could not save setting: ${runtimeError.message}`);
       return;
     }
-
     setCheckboxEnabled(enabled);
-    setStatus(enabled ? "Dual subtitles are enabled." : "Dual subtitles are disabled.");
+    setCheckboxEnabled(enabled);
   });
 });
 

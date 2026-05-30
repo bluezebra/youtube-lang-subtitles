@@ -55,7 +55,11 @@
       }
 
       #status {
-        min-height: 17px;
+        color: #5f6368;
+      }
+
+      #status:empty {
+        display: none;
       }
     </style>
   </head>
@@ -115,7 +119,7 @@
         <option value="uk">Ukrainian</option>
       </select>
     </div>
-    <p id="status">Loading setting...</p>
+    <p id="status"></p>
     <p>Open a YouTube video with captions, then choose the source and target languages.</p>
     <p>If translations lag behind fast speech, try slowing YouTube playback slightly.</p>
     <script src="popup.js"></script>
