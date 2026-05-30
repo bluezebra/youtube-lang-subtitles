@@ -4,7 +4,23 @@
   const targetLineId = "yt-dual-subtitles-target";
   const statusLineId = "yt-dual-subtitles-status";
   const translateMessageType = "ytDualSubtitles.translate";
-  const testPhrase = "Hei maailma";
+  const sourceLanguage = "fi";
+  const targetLanguage = "en";
+  const staleCaptionDelayMs = 1500;
+
+  const translationCache = new Map();
+  const pendingTranslations = new Map();
+
+  let activeCaptionText = "";
+  let lastCaptionText = "";
+  let lastCaptionSeenAt = 0;
+  let requestedCaptionText = "";
+  let activeTranslationRequestId = 0;
+  let updateScheduled = false;
+
+  function normalizeCaptionText(text) {
+    return text.replace(/\s+/g, " ").trim();
+  }
 
   function setText(element, text) {
     if (element.textContent !== text) {
@@ -26,15 +42,15 @@
 
     const statusLine = document.createElement("div");
     statusLine.id = statusLineId;
-    statusLine.textContent = "Testing Google Translate...";
+    statusLine.textContent = "Waiting for YouTube captions...";
 
     const sourceLine = document.createElement("div");
     sourceLine.id = sourceLineId;
-    sourceLine.textContent = `Finnish: ${testPhrase}`;
+    sourceLine.textContent = "Finnish: Turn on subtitles/CC in the YouTube player.";
 
     const targetLine = document.createElement("div");
     targetLine.id = targetLineId;
-    targetLine.textContent = "English: Translating...";
+    targetLine.textContent = "English: Waiting...";
 
     overlay.append(statusLine, sourceLine, targetLine);
     document.documentElement.appendChild(overlay);
@@ -88,7 +104,49 @@
     return overlay;
   }
 
-  function translateWithGoogle(text, sourceLanguage, targetLanguage) {
+  function readYouTubeCaptionText() {
+    const container = document.querySelector(".ytp-caption-window-container");
+
+    if (!container) {
+      return "";
+    }
+
+    const segmentText = Array.from(
+      container.querySelectorAll(".ytp-caption-segment")
+    )
+      .map((segment) => normalizeCaptionText(segment.textContent || ""))
+      .filter(Boolean)
+      .join(" ");
+
+    if (segmentText) {
+      return normalizeCaptionText(segmentText);
+    }
+
+    const windowText = Array.from(container.querySelectorAll(".caption-window"))
+      .map((captionWindow) => normalizeCaptionText(captionWindow.textContent || ""))
+      .filter(Boolean)
+      .join(" ");
+
+    return normalizeCaptionText(windowText);
+  }
+
+  function getCurrentOrRecentCaptionText() {
+    const captionText = readYouTubeCaptionText();
+
+    if (captionText) {
+      lastCaptionText = captionText;
+      lastCaptionSeenAt = Date.now();
+      return captionText;
+    }
+
+    if (lastCaptionText && Date.now() - lastCaptionSeenAt < staleCaptionDelayMs) {
+      return lastCaptionText;
+    }
+
+    return "";
+  }
+
+  function translateWithGoogle(text) {
     return new Promise((resolve, reject) => {
       chrome.runtime.sendMessage(
         {
@@ -121,35 +179,132 @@
     });
   }
 
-  async function runTranslationTest() {
+  function getTranslation(text) {
+    if (translationCache.has(text)) {
+      return Promise.resolve(translationCache.get(text));
+    }
+
+    if (pendingTranslations.has(text)) {
+      return pendingTranslations.get(text);
+    }
+
+    const pendingTranslation = translateWithGoogle(text)
+      .then((translation) => {
+        translationCache.set(text, translation);
+        return translation;
+      })
+      .finally(() => {
+        pendingTranslations.delete(text);
+      });
+
+    pendingTranslations.set(text, pendingTranslation);
+    return pendingTranslation;
+  }
+
+  function setWaitingState(statusLine, sourceLine, targetLine) {
+    activeCaptionText = "";
+    requestedCaptionText = "";
+    activeTranslationRequestId += 1;
+
+    setText(statusLine, "Waiting for YouTube captions...");
+    setText(sourceLine, "Finnish: Turn on subtitles/CC in the YouTube player.");
+    setText(targetLine, "English: Waiting...");
+  }
+
+  function startTranslation(captionText, statusLine, targetLine) {
+    requestedCaptionText = captionText;
+    const requestId = activeTranslationRequestId + 1;
+    activeTranslationRequestId = requestId;
+
+    getTranslation(captionText)
+      .then((translation) => {
+        if (requestId !== activeTranslationRequestId || captionText !== activeCaptionText) {
+          return;
+        }
+
+        setText(statusLine, "Live caption translated");
+        setText(targetLine, `English: ${translation}`);
+      })
+      .catch((error) => {
+        if (requestId !== activeTranslationRequestId || captionText !== activeCaptionText) {
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("YouTube Dual Subtitles translation failed", error);
+        setText(statusLine, "Live caption translation failed");
+        setText(targetLine, `English: Translation failed (${message})`);
+      });
+  }
+
+  function updateOverlay() {
     const overlay = createOverlay();
     const sourceLine = overlay.querySelector(`#${sourceLineId}`);
     const targetLine = overlay.querySelector(`#${targetLineId}`);
     const statusLine = overlay.querySelector(`#${statusLineId}`);
 
     if (!sourceLine || !targetLine || !statusLine) {
-      throw new Error("Translation overlay was not created correctly.");
+      throw new Error("Subtitle overlay was not created correctly.");
     }
 
-    setText(statusLine, "Testing Google Translate...");
-    setText(sourceLine, `Finnish: ${testPhrase}`);
+    const captionText = getCurrentOrRecentCaptionText();
+
+    if (!captionText) {
+      setWaitingState(statusLine, sourceLine, targetLine);
+      return;
+    }
+
+    if (captionText !== activeCaptionText) {
+      activeCaptionText = captionText;
+      requestedCaptionText = "";
+      activeTranslationRequestId += 1;
+    }
+
+    setText(statusLine, "Translating live caption...");
+    setText(sourceLine, `Finnish: ${captionText}`);
+
+    if (translationCache.has(captionText)) {
+      setText(statusLine, "Live caption translated");
+      setText(targetLine, `English: ${translationCache.get(captionText)}`);
+      return;
+    }
+
     setText(targetLine, "English: Translating...");
 
-    try {
-      const translation = await translateWithGoogle(testPhrase, "fi", "en");
-      setText(statusLine, "Google Translate test complete");
-      setText(targetLine, `English: ${translation}`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error("YouTube Dual Subtitles translation test failed", error);
-      setText(statusLine, "Google Translate test failed");
-      setText(targetLine, `English: Translation failed (${message})`);
+    if (requestedCaptionText !== captionText) {
+      startTranslation(captionText, statusLine, targetLine);
     }
   }
 
+  function scheduleUpdate() {
+    if (updateScheduled) {
+      return;
+    }
+
+    updateScheduled = true;
+    requestAnimationFrame(() => {
+      updateScheduled = false;
+      updateOverlay();
+    });
+  }
+
+  function startLiveTranslation() {
+    updateOverlay();
+
+    const observer = new MutationObserver(scheduleUpdate);
+    observer.observe(document.body || document.documentElement, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+
+    document.addEventListener("yt-navigate-finish", scheduleUpdate);
+    window.setInterval(scheduleUpdate, 500);
+  }
+
   if (document.body) {
-    runTranslationTest();
+    startLiveTranslation();
   } else {
-    document.addEventListener("DOMContentLoaded", runTranslationTest, { once: true });
+    document.addEventListener("DOMContentLoaded", startLiveTranslation, { once: true });
   }
 })();

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YouTube Dual Subtitles",
-  "description": "Step 3: translates a hardcoded Finnish test phrase and displays Finnish above English.",
-  "version": "0.3.0",
+  "description": "Step 4: translates live Finnish YouTube captions and displays Finnish above English.",
+  "version": "0.4.0",
   "host_permissions": [
     "https://translate.googleapis.com/*"
   ],

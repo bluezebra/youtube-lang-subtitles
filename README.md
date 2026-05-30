@@ -4,12 +4,12 @@ A small Brave/Chrome extension for experimenting with dual subtitles on YouTube.
 
 ## Current step
 
-Step 3 is implemented. On YouTube, the extension displays a test overlay with:
+Step 4 is implemented. On YouTube, the extension reads the currently displayed caption and shows:
 
-- Finnish: `Hei maailma`
-- English: the Google Translate result for that phrase
+- Finnish: the live YouTube caption text
+- English: the Google Translate result for that caption
 
-Live YouTube captions are not translated yet. That is the next step.
+Translations are cached while the page is open so repeated caption text does not call Google Translate again.
 
 ## Load in Brave
 
@@ -28,4 +28,4 @@ Live YouTube captions are not translated yet. That is the next step.
 
 ## Planned next step
 
-Wire the translator to the live YouTube caption text so Finnish captions appear above their English translation.
+Improve controls, language selection, and positioning so the extension is easier to use across different videos.
