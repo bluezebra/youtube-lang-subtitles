@@ -7,7 +7,9 @@
   const enabledStorageKey = "ytDualSubtitles.enabled";
   const translationDelayStorageKey = "ytDualSubtitles.translationDelayMs";
   const sourceLanguageStorageKey = "ytDualSubtitles.sourceLanguage";
+  const targetLanguageStorageKey = "ytDualSubtitles.targetLanguage";
   const defaultSourceLanguage = "auto";
+  const defaultTargetLanguage = "en";
   const allowedSourceLanguages = new Set([
     "auto",
     "ar",
@@ -30,7 +32,28 @@
     "tr",
     "uk"
   ]);
-  const targetLanguage = "en";
+  const allowedTargetLanguages = new Set([
+    "en",
+    "ar",
+    "zh-CN",
+    "zh-TW",
+    "nl",
+    "fi",
+    "fr",
+    "de",
+    "hi",
+    "it",
+    "ja",
+    "ko",
+    "no",
+    "pl",
+    "pt",
+    "ru",
+    "es",
+    "sv",
+    "tr",
+    "uk"
+  ]);
   const staleCaptionDelayMs = 1500;
   const overlayHeightPx = 86;
   const subtitleLineHeightPx = 30;
@@ -46,6 +69,7 @@
   let lastCaptionText = "";
   let lastCaptionSeenAt = 0;
   let sourceLanguage = defaultSourceLanguage;
+  let targetLanguage = defaultTargetLanguage;
   let updateScheduled = false;
 
   function normalizeCaptionText(text) {
@@ -423,6 +447,16 @@
     return defaultSourceLanguage;
   }
 
+  function normalizeTargetLanguage(value) {
+    const language = String(value || "");
+
+    if (allowedTargetLanguages.has(language)) {
+      return language;
+    }
+
+    return defaultTargetLanguage;
+  }
+
   function setTranslationDelayMs(value) {
     translationState.setDebounceMs(normalizeTranslationDelayMs(value));
   }
@@ -439,13 +473,26 @@
     scheduleUpdate();
   }
 
+  function setTargetLanguage(value) {
+    const normalizedLanguage = normalizeTargetLanguage(value);
+
+    if (targetLanguage === normalizedLanguage) {
+      return;
+    }
+
+    targetLanguage = normalizedLanguage;
+    translationState.clearTranslations();
+    scheduleUpdate();
+  }
+
   function readSettings() {
     return new Promise((resolve) => {
       chrome.storage.sync.get(
         {
           [enabledStorageKey]: true,
           [translationDelayStorageKey]: defaultTranslationDelayMs,
-          [sourceLanguageStorageKey]: defaultSourceLanguage
+          [sourceLanguageStorageKey]: defaultSourceLanguage,
+          [targetLanguageStorageKey]: defaultTargetLanguage
         },
         (items) => {
           const runtimeError = chrome.runtime.lastError;
@@ -455,6 +502,7 @@
             resolve({
               enabled: true,
               sourceLanguage: defaultSourceLanguage,
+              targetLanguage: defaultTargetLanguage,
               translationDelayMs: defaultTranslationDelayMs
             });
             return;
@@ -463,6 +511,7 @@
           resolve({
             enabled: items[enabledStorageKey] !== false,
             sourceLanguage: normalizeSourceLanguage(items[sourceLanguageStorageKey]),
+            targetLanguage: normalizeTargetLanguage(items[targetLanguageStorageKey]),
             translationDelayMs: normalizeTranslationDelayMs(items[translationDelayStorageKey])
           });
         }
@@ -474,6 +523,7 @@
     chrome.storage.onChanged.addListener((changes, areaName) => {
       const enabledChange = changes[enabledStorageKey];
       const sourceLanguageChange = changes[sourceLanguageStorageKey];
+      const targetLanguageChange = changes[targetLanguageStorageKey];
       const translationDelayChange = changes[translationDelayStorageKey];
 
       if (areaName !== "sync") {
@@ -488,6 +538,10 @@
         setSourceLanguage(sourceLanguageChange.newValue);
       }
 
+      if (targetLanguageChange) {
+        setTargetLanguage(targetLanguageChange.newValue);
+      }
+
       if (translationDelayChange) {
         setTranslationDelayMs(translationDelayChange.newValue);
       }
@@ -499,6 +553,7 @@
 
     isEnabled = settings.enabled;
     sourceLanguage = settings.sourceLanguage;
+    targetLanguage = settings.targetLanguage;
     translationState.setEnabled(isEnabled);
     setTranslationDelayMs(settings.translationDelayMs);
     watchSettings();

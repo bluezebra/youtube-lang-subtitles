@@ -1,8 +1,10 @@
 const enabledStorageKey = "ytDualSubtitles.enabled";
 const translationDelayStorageKey = "ytDualSubtitles.translationDelayMs";
 const sourceLanguageStorageKey = "ytDualSubtitles.sourceLanguage";
+const targetLanguageStorageKey = "ytDualSubtitles.targetLanguage";
 const defaultTranslationDelayMs = 200;
 const defaultSourceLanguage = "auto";
+const defaultTargetLanguage = "en";
 const allowedTranslationDelayMs = new Set([100, 200, 350]);
 const allowedSourceLanguages = new Set([
   "auto",
@@ -26,12 +28,35 @@ const allowedSourceLanguages = new Set([
   "tr",
   "uk"
 ]);
-const sourceLanguageNames = {
+const allowedTargetLanguages = new Set([
+  "en",
+  "ar",
+  "zh-CN",
+  "zh-TW",
+  "nl",
+  "fi",
+  "fr",
+  "de",
+  "hi",
+  "it",
+  "ja",
+  "ko",
+  "no",
+  "pl",
+  "pt",
+  "ru",
+  "es",
+  "sv",
+  "tr",
+  "uk"
+]);
+const languageNames = {
   ar: "Arabic",
   auto: "Auto-detect",
   "zh-CN": "Chinese (Simplified)",
   "zh-TW": "Chinese (Traditional)",
   de: "German",
+  en: "English",
   nl: "Dutch",
   es: "Spanish",
   fi: "Finnish",
@@ -52,6 +77,7 @@ const sourceLanguageNames = {
 const enabledCheckbox = document.getElementById("enabled");
 const translationDelaySelect = document.getElementById("translation-delay");
 const sourceLanguageSelect = document.getElementById("source-language");
+const targetLanguageSelect = document.getElementById("target-language");
 const statusText = document.getElementById("status");
 
 function setStatus(text) {
@@ -83,6 +109,16 @@ function normalizeSourceLanguage(value) {
   return defaultSourceLanguage;
 }
 
+function normalizeTargetLanguage(value) {
+  const language = String(value || "");
+
+  if (allowedTargetLanguages.has(language)) {
+    return language;
+   }
+
+  return defaultTargetLanguage;
+}
+
 function setDelaySelectEnabled(delayMs) {
   translationDelaySelect.value = String(normalizeTranslationDelayMs(delayMs));
   translationDelaySelect.disabled = false;
@@ -93,11 +129,17 @@ function setSourceLanguageSelectEnabled(language) {
   sourceLanguageSelect.disabled = false;
 }
 
+function setTargetLanguageSelectEnabled(language) {
+  targetLanguageSelect.value = normalizeTargetLanguage(language);
+  targetLanguageSelect.disabled = false;
+}
+
 chrome.storage.sync.get(
   {
     [enabledStorageKey]: true,
     [translationDelayStorageKey]: defaultTranslationDelayMs,
-    [sourceLanguageStorageKey]: defaultSourceLanguage
+    [sourceLanguageStorageKey]: defaultSourceLanguage,
+    [targetLanguageStorageKey]: defaultTargetLanguage
   },
   (items) => {
     const runtimeError = chrome.runtime.lastError;
@@ -106,12 +148,14 @@ chrome.storage.sync.get(
       enabledCheckbox.disabled = true;
       translationDelaySelect.disabled = true;
       sourceLanguageSelect.disabled = true;
+      targetLanguageSelect.disabled = true;
       setStatus(`Could not load setting: ${runtimeError.message}`);
       return;
     }
 
     setCheckboxEnabled(items[enabledStorageKey] !== false);
     setSourceLanguageSelectEnabled(items[sourceLanguageStorageKey]);
+    setTargetLanguageSelectEnabled(items[targetLanguageStorageKey]);
     setDelaySelectEnabled(items[translationDelayStorageKey]);
     setStatus(enabledCheckbox.checked ? "Dual subtitles are enabled." : "Dual subtitles are disabled.");
   }
@@ -150,7 +194,25 @@ sourceLanguageSelect.addEventListener("change", () => {
     }
 
     setSourceLanguageSelectEnabled(sourceLanguage);
-    setStatus(`Source language set to ${sourceLanguageNames[sourceLanguage]}.`);
+    setStatus(`Source language set to ${languageNames[sourceLanguage]}.`);
+  });
+});
+
+targetLanguageSelect.addEventListener("change", () => {
+  targetLanguageSelect.disabled = true;
+  const targetLanguage = normalizeTargetLanguage(targetLanguageSelect.value);
+
+  chrome.storage.sync.set({ [targetLanguageStorageKey]: targetLanguage }, () => {
+    const runtimeError = chrome.runtime.lastError;
+
+    if (runtimeError) {
+      targetLanguageSelect.disabled = false;
+      setStatus(`Could not save target language: ${runtimeError.message}`);
+      return;
+    }
+
+    setTargetLanguageSelectEnabled(targetLanguage);
+    setStatus(`Target language set to ${languageNames[targetLanguage]}.`);
   });
 });
 
