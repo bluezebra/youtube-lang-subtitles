@@ -45,6 +45,6 @@ npm test
 Continue improving fast-speech handling. Possible approaches:
 
 1. Batch short nearby captions before translating to reduce request churn.
-2. Prefetch YouTube's caption track/transcript and translate upcoming captions before they appear. This is likely the best long-term result, but it is more complex.
+2. Explore a different transcript source for translating upcoming captions before they appear.
 
 After that, add language selection and positioning options so the extension is easier to use across different videos.
