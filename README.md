@@ -31,6 +31,21 @@ While enabled, YouTube's native caption layer is hidden so only the extension's 
 - `popup.html` - Extension popup UI.
 - `popup.js` - Saves the on/off setting.
 
+## Tests
+
+Run the Node unit tests with:
+
+```powershell
+npm test
+```
+
 ## Planned next step
 
-Add language selection and positioning options so the extension is easier to use across different videos.
+Improve fast-speech handling. Possible approaches:
+
+1. Keep the previous English translation visible until the new translation arrives. This is the smallest improvement and avoids a blank second line during rapid captions.
+2. Debounce caption changes so tiny rapid partial updates do not all trigger translation requests.
+3. Batch short nearby captions before translating to reduce request churn.
+4. Prefetch YouTube's caption track/transcript and translate upcoming captions before they appear. This is likely the best long-term result, but it is more complex.
+
+After that, add language selection and positioning options so the extension is easier to use across different videos.

@@ -23,6 +23,7 @@
         "https://m.youtube.com/*"
       ],
       "js": [
+        "src/translationState.js",
         "content.js"
       ],
       "run_at": "document_idle"

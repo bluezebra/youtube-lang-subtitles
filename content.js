@@ -9,19 +9,17 @@
   const targetLanguage = "en";
   const staleCaptionDelayMs = 1500;
 
-  const translationCache = new Map();
-  const pendingTranslations = new Map();
+  const translationState = YtDualSubtitlesTranslationState.createTranslationState({
+    translate: translateWithGoogle
+  });
 
   let isEnabled = true;
-  let activeCaptionText = "";
   let lastCaptionText = "";
   let lastCaptionSeenAt = 0;
-  let requestedCaptionText = "";
-  let activeTranslationRequestId = 0;
   let updateScheduled = false;
 
   function normalizeCaptionText(text) {
-    return text.replace(/\s+/g, " ").trim();
+    return YtDualSubtitlesTranslationState.normalizeCaptionText(text);
   }
 
   function setText(element, text) {
@@ -39,11 +37,9 @@
   }
 
   function resetCaptionState() {
-    activeCaptionText = "";
     lastCaptionText = "";
     lastCaptionSeenAt = 0;
-    requestedCaptionText = "";
-    activeTranslationRequestId += 1;
+    translationState.updateCaption("");
   }
 
   function hideOverlay() {
@@ -229,54 +225,6 @@
     });
   }
 
-  function getTranslation(text) {
-    if (translationCache.has(text)) {
-      return Promise.resolve(translationCache.get(text));
-    }
-
-    if (pendingTranslations.has(text)) {
-      return pendingTranslations.get(text);
-    }
-
-    const pendingTranslation = translateWithGoogle(text)
-      .then((translation) => {
-        translationCache.set(text, translation);
-        return translation;
-      })
-      .finally(() => {
-        pendingTranslations.delete(text);
-      });
-
-    pendingTranslations.set(text, pendingTranslation);
-    return pendingTranslation;
-  }
-
-  function startTranslation(captionText, targetLine) {
-    requestedCaptionText = captionText;
-    const requestId = activeTranslationRequestId + 1;
-    activeTranslationRequestId = requestId;
-
-    getTranslation(captionText)
-      .then((translation) => {
-        if (!isEnabled || requestId !== activeTranslationRequestId || captionText !== activeCaptionText) {
-          return;
-        }
-
-        setInvisible(targetLine, false);
-        setText(targetLine, translation);
-      })
-      .catch((error) => {
-        if (!isEnabled || requestId !== activeTranslationRequestId || captionText !== activeCaptionText) {
-          return;
-        }
-
-        const message = error instanceof Error ? error.message : String(error);
-        console.error("YouTube Dual Subtitles translation failed", error);
-        setInvisible(targetLine, false);
-        setText(targetLine, `Translation failed (${message})`);
-      });
-  }
-
   function updateOverlay() {
     if (!isEnabled) {
       setNativeCaptionsHidden(false);
@@ -288,7 +236,32 @@
 
     const captionText = getCurrentOrRecentCaptionText();
 
-    if (!captionText) {
+    const captionState = translationState.updateCaption(captionText, {
+      onTranslation(translation) {
+        const targetLine = document.getElementById(targetLineId);
+
+        if (!targetLine) {
+          return;
+        }
+
+        setInvisible(targetLine, false);
+        setText(targetLine, translation);
+      },
+      onError(error) {
+        const targetLine = document.getElementById(targetLineId);
+
+        if (!targetLine) {
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("YouTube Dual Subtitles translation failed", error);
+        setInvisible(targetLine, false);
+        setText(targetLine, `Translation failed (${message})`);
+      }
+    });
+
+    if (!captionState.visible) {
       resetCaptionState();
       hideOverlay();
       return;
@@ -302,26 +275,9 @@
       throw new Error("Subtitle overlay was not created correctly.");
     }
 
-    if (captionText !== activeCaptionText) {
-      activeCaptionText = captionText;
-      requestedCaptionText = "";
-      activeTranslationRequestId += 1;
-    }
-
-    setText(sourceLine, captionText);
-
-    if (translationCache.has(captionText)) {
-      setInvisible(targetLine, false);
-      setText(targetLine, translationCache.get(captionText));
-      return;
-    }
-
-    setText(targetLine, "");
-    setInvisible(targetLine, true);
-
-    if (requestedCaptionText !== captionText) {
-      startTranslation(captionText, targetLine);
-    }
+    setText(sourceLine, captionState.sourceText);
+    setText(targetLine, captionState.targetText);
+    setInvisible(targetLine, !captionState.targetVisible);
   }
 
   function scheduleUpdate() {
@@ -342,6 +298,7 @@
     }
 
     isEnabled = enabled;
+    translationState.setEnabled(enabled);
 
     if (!isEnabled) {
       resetCaptionState();
@@ -383,6 +340,7 @@
 
   async function startLiveTranslation() {
     isEnabled = await readEnabledSetting();
+    translationState.setEnabled(isEnabled);
     watchEnabledSetting();
     updateOverlay();
 
