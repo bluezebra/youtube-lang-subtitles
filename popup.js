@@ -1,11 +1,8 @@
 const enabledStorageKey = "ytDualSubtitles.enabled";
-const translationDelayStorageKey = "ytDualSubtitles.translationDelayMs";
 const sourceLanguageStorageKey = "ytDualSubtitles.sourceLanguage";
 const targetLanguageStorageKey = "ytDualSubtitles.targetLanguage";
-const defaultTranslationDelayMs = 200;
 const defaultSourceLanguage = "auto";
 const defaultTargetLanguage = "en";
-const allowedTranslationDelayMs = new Set([100, 200, 350]);
 const allowedSourceLanguages = new Set([
   "auto",
   "ar",
@@ -73,9 +70,7 @@ const languageNames = {
   tr: "Turkish",
   uk: "Ukrainian"
 };
-
 const enabledCheckbox = document.getElementById("enabled");
-const translationDelaySelect = document.getElementById("translation-delay");
 const sourceLanguageSelect = document.getElementById("source-language");
 const targetLanguageSelect = document.getElementById("target-language");
 const statusText = document.getElementById("status");
@@ -87,16 +82,6 @@ function setStatus(text) {
 function setCheckboxEnabled(enabled) {
   enabledCheckbox.checked = enabled;
   enabledCheckbox.disabled = false;
-}
-
-function normalizeTranslationDelayMs(value) {
-  const numericValue = Number(value);
-
-  if (allowedTranslationDelayMs.has(numericValue)) {
-    return numericValue;
-  }
-
-  return defaultTranslationDelayMs;
 }
 
 function normalizeSourceLanguage(value) {
@@ -114,14 +99,9 @@ function normalizeTargetLanguage(value) {
 
   if (allowedTargetLanguages.has(language)) {
     return language;
-   }
+  }
 
   return defaultTargetLanguage;
-}
-
-function setDelaySelectEnabled(delayMs) {
-  translationDelaySelect.value = String(normalizeTranslationDelayMs(delayMs));
-  translationDelaySelect.disabled = false;
 }
 
 function setSourceLanguageSelectEnabled(language) {
@@ -137,16 +117,13 @@ function setTargetLanguageSelectEnabled(language) {
 chrome.storage.sync.get(
   {
     [enabledStorageKey]: true,
-    [translationDelayStorageKey]: defaultTranslationDelayMs,
     [sourceLanguageStorageKey]: defaultSourceLanguage,
     [targetLanguageStorageKey]: defaultTargetLanguage
   },
   (items) => {
     const runtimeError = chrome.runtime.lastError;
-
     if (runtimeError) {
       enabledCheckbox.disabled = true;
-      translationDelaySelect.disabled = true;
       sourceLanguageSelect.disabled = true;
       targetLanguageSelect.disabled = true;
       setStatus(`Could not load setting: ${runtimeError.message}`);
@@ -156,7 +133,6 @@ chrome.storage.sync.get(
     setCheckboxEnabled(items[enabledStorageKey] !== false);
     setSourceLanguageSelectEnabled(items[sourceLanguageStorageKey]);
     setTargetLanguageSelectEnabled(items[targetLanguageStorageKey]);
-    setDelaySelectEnabled(items[translationDelayStorageKey]);
     setStatus(enabledCheckbox.checked ? "Dual subtitles are enabled." : "Dual subtitles are disabled.");
   }
 );
@@ -213,23 +189,5 @@ targetLanguageSelect.addEventListener("change", () => {
 
     setTargetLanguageSelectEnabled(targetLanguage);
     setStatus(`Target language set to ${languageNames[targetLanguage]}.`);
-  });
-});
-
-translationDelaySelect.addEventListener("change", () => {
-  translationDelaySelect.disabled = true;
-  const translationDelayMs = normalizeTranslationDelayMs(translationDelaySelect.value);
-
-  chrome.storage.sync.set({ [translationDelayStorageKey]: translationDelayMs }, () => {
-    const runtimeError = chrome.runtime.lastError;
-
-    if (runtimeError) {
-      translationDelaySelect.disabled = false;
-      setStatus(`Could not save delay: ${runtimeError.message}`);
-      return;
-    }
-
-    setDelaySelectEnabled(translationDelayMs);
-    setStatus(`Translation delay set to ${translationDelayMs}ms.`);
   });
 });

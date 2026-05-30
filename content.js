@@ -5,7 +5,6 @@
   const targetLineId = "yt-dual-subtitles-target";
   const translateMessageType = "ytDualSubtitles.translate";
   const enabledStorageKey = "ytDualSubtitles.enabled";
-  const translationDelayStorageKey = "ytDualSubtitles.translationDelayMs";
   const sourceLanguageStorageKey = "ytDualSubtitles.sourceLanguage";
   const targetLanguageStorageKey = "ytDualSubtitles.targetLanguage";
   const defaultSourceLanguage = "auto";
@@ -427,16 +426,6 @@
     scheduleUpdate();
   }
 
-  function normalizeTranslationDelayMs(value) {
-    const numericValue = Number(value);
-
-    if ([100, 200, 350].includes(numericValue)) {
-      return numericValue;
-    }
-
-    return defaultTranslationDelayMs;
-  }
-
   function normalizeSourceLanguage(value) {
     const language = String(value || "");
 
@@ -455,10 +444,6 @@
     }
 
     return defaultTargetLanguage;
-  }
-
-  function setTranslationDelayMs(value) {
-    translationState.setDebounceMs(normalizeTranslationDelayMs(value));
   }
 
   function setSourceLanguage(value) {
@@ -490,7 +475,6 @@
       chrome.storage.sync.get(
         {
           [enabledStorageKey]: true,
-          [translationDelayStorageKey]: defaultTranslationDelayMs,
           [sourceLanguageStorageKey]: defaultSourceLanguage,
           [targetLanguageStorageKey]: defaultTargetLanguage
         },
@@ -502,8 +486,7 @@
             resolve({
               enabled: true,
               sourceLanguage: defaultSourceLanguage,
-              targetLanguage: defaultTargetLanguage,
-              translationDelayMs: defaultTranslationDelayMs
+              targetLanguage: defaultTargetLanguage
             });
             return;
           }
@@ -511,8 +494,7 @@
           resolve({
             enabled: items[enabledStorageKey] !== false,
             sourceLanguage: normalizeSourceLanguage(items[sourceLanguageStorageKey]),
-            targetLanguage: normalizeTargetLanguage(items[targetLanguageStorageKey]),
-            translationDelayMs: normalizeTranslationDelayMs(items[translationDelayStorageKey])
+            targetLanguage: normalizeTargetLanguage(items[targetLanguageStorageKey])
           });
         }
       );
@@ -524,7 +506,6 @@
       const enabledChange = changes[enabledStorageKey];
       const sourceLanguageChange = changes[sourceLanguageStorageKey];
       const targetLanguageChange = changes[targetLanguageStorageKey];
-      const translationDelayChange = changes[translationDelayStorageKey];
 
       if (areaName !== "sync") {
         return;
@@ -542,9 +523,6 @@
         setTargetLanguage(targetLanguageChange.newValue);
       }
 
-      if (translationDelayChange) {
-        setTranslationDelayMs(translationDelayChange.newValue);
-      }
     });
   }
 
@@ -555,7 +533,6 @@
     sourceLanguage = settings.sourceLanguage;
     targetLanguage = settings.targetLanguage;
     translationState.setEnabled(isEnabled);
-    setTranslationDelayMs(settings.translationDelayMs);
     watchSettings();
     updateOverlay();
 

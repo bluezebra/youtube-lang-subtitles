@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YouTube Dual Subtitles",
-  "description": "Step 16: adds target language selection.",
-  "version": "0.16.0",
+  "description": "Step 17: simplifies the popup controls.",
+  "version": "0.17.0",
   "permissions": [
     "storage"
   ],
