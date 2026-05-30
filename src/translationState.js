@@ -27,6 +27,7 @@
     let requestedCaptionText = "";
     let lastTranslatedText = "";
     let activeTranslationRequestId = 0;
+    let translationCacheGeneration = 0;
     let debounceTimer = null;
 
     function clearDebounceTimer() {
@@ -46,6 +47,16 @@
       activeTranslationRequestId += 1;
     }
 
+    function clearTranslations() {
+      clearDebounceTimer();
+      translationCacheGeneration += 1;
+      translationCache.clear();
+      pendingTranslations.clear();
+      requestedCaptionText = "";
+      lastTranslatedText = "";
+      activeTranslationRequestId += 1;
+    }
+
     function getTranslation(text) {
       const normalizedText = normalizeCaptionText(text);
 
@@ -57,13 +68,19 @@
         return pendingTranslations.get(normalizedText);
       }
 
+      const cacheGeneration = translationCacheGeneration;
       const pendingTranslation = Promise.resolve(translate(normalizedText))
         .then((translation) => {
-          translationCache.set(normalizedText, translation);
+          if (cacheGeneration === translationCacheGeneration) {
+            translationCache.set(normalizedText, translation);
+          }
+
           return translation;
         })
         .finally(() => {
-          pendingTranslations.delete(normalizedText);
+          if (cacheGeneration === translationCacheGeneration) {
+            pendingTranslations.delete(normalizedText);
+          }
         });
 
       pendingTranslations.set(normalizedText, pendingTranslation);
@@ -200,6 +217,7 @@
     }
 
     return {
+      clearTranslations,
       getTranslation,
       normalizeCaptionText,
       setDebounceMs,

@@ -66,6 +66,19 @@
       Enable dual subtitles
     </label>
     <div class="field">
+      <label for="source-language">Source language</label>
+      <select id="source-language" disabled>
+        <option value="auto">Auto-detect</option>
+        <option value="fi">Finnish</option>
+        <option value="es">Spanish</option>
+        <option value="de">German</option>
+        <option value="fr">French</option>
+        <option value="sv">Swedish</option>
+        <option value="ja">Japanese</option>
+        <option value="ko">Korean</option>
+      </select>
+    </div>
+    <div class="field">
       <label for="translation-delay">Translation delay</label>
       <select id="translation-delay" disabled>
         <option value="100">Fast (100ms)</option>
@@ -74,7 +87,7 @@
       </select>
     </div>
     <p id="status">Loading setting...</p>
-    <p>Open a YouTube video with captions, then tune the delay for responsiveness or smoothness.</p>
+    <p>Open a YouTube video with captions, then choose the source language and delay.</p>
     <script src="popup.js"></script>
   </body>
 </html>

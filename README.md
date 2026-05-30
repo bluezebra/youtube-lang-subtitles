@@ -4,13 +4,13 @@ A small Brave/Chrome extension for experimenting with dual subtitles on YouTube.
 
 ## Current step
 
-Step 13 is implemented. On YouTube, the extension reads the currently displayed caption and shows:
+Step 14 is implemented. On YouTube, the extension reads the currently displayed caption and shows:
 
 - The live YouTube caption text on top
-- The Google Translate result underneath, using source language auto-detect and English as the target language
+- The Google Translate result underneath, using a popup-selected source language and English as the target language
 
 Translations are cached while the page is open so repeated caption text does not call Google Translate again. During fast captions, the previous English translation stays visible until the new translation arrives, and rapid partial caption changes are debounced before sending a translation request.
-The extension popup includes an **Enable dual subtitles** checkbox and a **Translation delay** setting with Fast, Balanced, and Smooth options. Turning the extension off hides the overlay, restores YouTube's native captions, and stops new translation requests.
+The extension popup includes an **Enable dual subtitles** checkbox, a **Source language** selector with Auto-detect as the default, and a **Translation delay** setting with Fast, Balanced, and Smooth options. Turning the extension off hides the overlay, restores YouTube's native captions, and stops new translation requests.
 While enabled, YouTube's native caption layer is hidden so only the extension's borderless dual-subtitle overlay is visible. The overlay stays hidden when there is no caption text to translate, uses a stable width and height to reduce jumping, follows the YouTube player during resize/layout changes, and displays both subtitle lines in white.
 
 ## Load in Brave
@@ -30,7 +30,7 @@ While enabled, YouTube's native caption layer is hidden so only the extension's 
 - `src/overlayPosition.js` - Calculates the overlay position relative to the YouTube player.
 - `background.js` - Calls Google Translate from the extension service worker.
 - `popup.html` - Extension popup UI.
-- `popup.js` - Saves the on/off setting.
+- `popup.js` - Saves the on/off, source language, and translation delay settings.
 
 ## Tests
 
@@ -47,4 +47,4 @@ Continue improving fast-speech handling. Possible approaches:
 1. Batch short nearby captions before translating to reduce request churn.
 2. Explore a different transcript source for translating upcoming captions before they appear.
 
-After that, add language selection and positioning options so the extension is easier to use across different videos.
+After that, add positioning options so the extension is easier to use across different videos.

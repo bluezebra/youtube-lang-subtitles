@@ -82,6 +82,36 @@ test("concurrent duplicate translation requests reuse the pending Promise", asyn
   assert.equal(await secondRequest, "hello");
 });
 
+test("clears cached and pending translations", async () => {
+  const firstTranslation = deferred();
+  const secondTranslation = deferred();
+  const translations = [firstTranslation, secondTranslation];
+  let calls = 0;
+  const state = createTranslationState({
+    translate() {
+      const translation = translations[calls];
+      calls += 1;
+      return translation.promise;
+    }
+  });
+
+  const firstRequest = state.getTranslation("hola");
+
+  state.clearTranslations();
+
+  const secondRequest = state.getTranslation("hola");
+
+  secondTranslation.resolve("new hello");
+  assert.equal(await secondRequest, "new hello");
+
+  firstTranslation.resolve("old hello");
+  assert.equal(await firstRequest, "old hello");
+  await flushPromiseHandlers();
+
+  assert.equal(await state.getTranslation("hola"), "new hello");
+  assert.equal(calls, 2);
+});
+
 test("stale translation responses are ignored when the active caption changes", async () => {
   const firstTranslation = deferred();
   const secondTranslation = deferred();
