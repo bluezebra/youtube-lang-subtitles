@@ -49,6 +49,12 @@ npm test
 
 See `PRIVACY.md` for details about what data the extension handles and how caption text is sent for translation.
 
+## Support
+
+If this extension is useful, you can support development here:
+
+[Buy me a coffee](https://buymeacoffee.com/bluezebrafish)
+
 ## License
 
 MIT License. See `LICENSE` for details.
