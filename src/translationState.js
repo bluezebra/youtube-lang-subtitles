@@ -10,6 +10,14 @@
       throw new Error("translate must be a function.");
     }
 
+    const debounceMs =
+      options && Number.isFinite(options.debounceMs) && options.debounceMs > 0
+        ? options.debounceMs
+        : 0;
+    const scheduleTimeout =
+      (options && options.setTimeout) || ((callback, delay) => root.setTimeout(callback, delay));
+    const clearScheduledTimeout =
+      (options && options.clearTimeout) || ((timer) => root.clearTimeout(timer));
     const translationCache = new Map();
     const pendingTranslations = new Map();
 
@@ -18,8 +26,19 @@
     let requestedCaptionText = "";
     let lastTranslatedText = "";
     let activeTranslationRequestId = 0;
+    let debounceTimer = null;
+
+    function clearDebounceTimer() {
+      if (!debounceTimer) {
+        return;
+      }
+
+      clearScheduledTimeout(debounceTimer);
+      debounceTimer = null;
+    }
 
     function resetCaptionState() {
+      clearDebounceTimer();
       activeCaptionText = "";
       requestedCaptionText = "";
       lastTranslatedText = "";
@@ -64,6 +83,61 @@
       }
     }
 
+    function requestTranslation(normalizedCaptionText, requestId, handlers) {
+      getTranslation(normalizedCaptionText)
+        .then((translation) => {
+          if (
+            !isEnabled ||
+            requestId !== activeTranslationRequestId ||
+            normalizedCaptionText !== activeCaptionText
+          ) {
+            return;
+          }
+
+          lastTranslatedText = translation;
+
+          if (handlers && typeof handlers.onTranslation === "function") {
+            handlers.onTranslation(translation, normalizedCaptionText);
+          }
+        })
+        .catch((error) => {
+          if (
+            !isEnabled ||
+            requestId !== activeTranslationRequestId ||
+            normalizedCaptionText !== activeCaptionText
+          ) {
+            return;
+          }
+
+          if (handlers && typeof handlers.onError === "function") {
+            handlers.onError(error, normalizedCaptionText);
+          }
+        });
+    }
+
+    function scheduleTranslation(normalizedCaptionText, requestId, handlers) {
+      clearDebounceTimer();
+
+      if (!debounceMs) {
+        requestTranslation(normalizedCaptionText, requestId, handlers);
+        return;
+      }
+
+      debounceTimer = scheduleTimeout(() => {
+        debounceTimer = null;
+
+        if (
+          !isEnabled ||
+          requestId !== activeTranslationRequestId ||
+          normalizedCaptionText !== activeCaptionText
+        ) {
+          return;
+        }
+
+        requestTranslation(normalizedCaptionText, requestId, handlers);
+      }, debounceMs);
+    }
+
     function updateCaption(captionText, handlers) {
       const normalizedCaptionText = normalizeCaptionText(captionText);
 
@@ -83,6 +157,7 @@
       }
 
       if (normalizedCaptionText !== activeCaptionText) {
+        clearDebounceTimer();
         activeCaptionText = normalizedCaptionText;
         requestedCaptionText = "";
         activeTranslationRequestId += 1;
@@ -107,35 +182,7 @@
         requestedCaptionText = normalizedCaptionText;
         const requestId = activeTranslationRequestId;
 
-        getTranslation(normalizedCaptionText)
-          .then((translation) => {
-            if (
-              !isEnabled ||
-              requestId !== activeTranslationRequestId ||
-              normalizedCaptionText !== activeCaptionText
-            ) {
-              return;
-            }
-
-            lastTranslatedText = translation;
-
-            if (handlers && typeof handlers.onTranslation === "function") {
-              handlers.onTranslation(translation, normalizedCaptionText);
-            }
-          })
-          .catch((error) => {
-            if (
-              !isEnabled ||
-              requestId !== activeTranslationRequestId ||
-              normalizedCaptionText !== activeCaptionText
-            ) {
-              return;
-            }
-
-            if (handlers && typeof handlers.onError === "function") {
-              handlers.onError(error, normalizedCaptionText);
-            }
-          });
+        scheduleTranslation(normalizedCaptionText, requestId, handlers);
       }
 
       return {

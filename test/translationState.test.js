@@ -18,6 +18,34 @@ async function flushPromiseHandlers() {
   await new Promise((resolve) => setImmediate(resolve));
 }
 
+function createManualScheduler() {
+  const timers = [];
+
+  return {
+    timers,
+    setTimeout(callback, delay) {
+      const timer = {
+        callback,
+        cleared: false,
+        delay
+      };
+
+      timers.push(timer);
+      return timer;
+    },
+    clearTimeout(timer) {
+      timer.cleared = true;
+    },
+    runPending() {
+      for (const timer of timers) {
+        if (!timer.cleared) {
+          timer.callback();
+        }
+      }
+    }
+  };
+}
+
 test("translation cache returns cached results without calling translator again", async () => {
   let calls = 0;
   const state = createTranslationState({
@@ -190,5 +218,63 @@ test("keeps previous translation visible while a new caption is translating", as
   assert.deepEqual(applied, [
     { translation: "first translated", captionText: "first" },
     { translation: "second translated", captionText: "second" }
+  ]);
+});
+
+test("debounces rapid partial caption changes before translating the latest caption", async () => {
+  const scheduler = createManualScheduler();
+  const translatedTexts = [];
+  const applied = [];
+  const state = createTranslationState({
+    debounceMs: 200,
+    setTimeout: scheduler.setTimeout,
+    clearTimeout: scheduler.clearTimeout,
+    translate(text) {
+      translatedTexts.push(text);
+      return `${text} translated`;
+    }
+  });
+
+  assert.deepEqual(
+    state.updateCaption("hel", {
+      onTranslation(translation, captionText) {
+        applied.push({ translation, captionText });
+      }
+    }),
+    {
+      visible: true,
+      sourceText: "hel",
+      targetText: "",
+      targetVisible: false,
+      requestStarted: true
+    }
+  );
+  assert.equal(scheduler.timers[0].delay, 200);
+  assert.deepEqual(translatedTexts, []);
+
+  assert.deepEqual(
+    state.updateCaption("hello", {
+      onTranslation(translation, captionText) {
+        applied.push({ translation, captionText });
+      }
+    }),
+    {
+      visible: true,
+      sourceText: "hello",
+      targetText: "",
+      targetVisible: false,
+      requestStarted: true
+    }
+  );
+  assert.equal(scheduler.timers[0].cleared, true);
+  assert.equal(scheduler.timers[1].delay, 200);
+  assert.deepEqual(translatedTexts, []);
+
+  scheduler.runPending();
+  await flushPromiseHandlers();
+
+  assert.deepEqual(translatedTexts, ["hello"]);
+  assert.deepEqual(applied, [
+    { translation: "hello translated", captionText: "hello" }
   ]);
 });

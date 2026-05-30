@@ -4,12 +4,12 @@ A small Brave/Chrome extension for experimenting with dual subtitles on YouTube.
 
 ## Current step
 
-Step 11 is implemented. On YouTube, the extension reads the currently displayed caption and shows:
+Step 12 is implemented. On YouTube, the extension reads the currently displayed caption and shows:
 
 - The live YouTube caption text on top
 - The Google Translate result underneath, using source language auto-detect and English as the target language
 
-Translations are cached while the page is open so repeated caption text does not call Google Translate again. During fast captions, the previous English translation stays visible until the new translation arrives.
+Translations are cached while the page is open so repeated caption text does not call Google Translate again. During fast captions, the previous English translation stays visible until the new translation arrives, and rapid partial caption changes are debounced before sending a translation request.
 The extension popup includes an **Enable dual subtitles** checkbox. Turning it off hides the overlay, restores YouTube's native captions, and stops new translation requests.
 While enabled, YouTube's native caption layer is hidden so only the extension's borderless dual-subtitle overlay is visible. The overlay stays hidden when there is no caption text to translate, uses a stable width and height to reduce jumping, follows the YouTube player during resize/layout changes, and displays both subtitle lines in white.
 
@@ -44,8 +44,7 @@ npm test
 
 Continue improving fast-speech handling. Possible approaches:
 
-1. Debounce caption changes so tiny rapid partial updates do not all trigger translation requests.
-2. Batch short nearby captions before translating to reduce request churn.
-3. Prefetch YouTube's caption track/transcript and translate upcoming captions before they appear. This is likely the best long-term result, but it is more complex.
+1. Batch short nearby captions before translating to reduce request churn.
+2. Prefetch YouTube's caption track/transcript and translate upcoming captions before they appear. This is likely the best long-term result, but it is more complex.
 
 After that, add language selection and positioning options so the extension is easier to use across different videos.

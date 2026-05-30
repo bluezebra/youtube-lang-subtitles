@@ -9,8 +9,10 @@
   const targetLanguage = "en";
   const staleCaptionDelayMs = 1500;
   const overlayHeightPx = 86;
+  const translationDebounceMs = 200;
 
   const translationState = YtDualSubtitlesTranslationState.createTranslationState({
+    debounceMs: translationDebounceMs,
     translate: translateWithGoogle
   });
 
