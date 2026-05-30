@@ -2,7 +2,6 @@
   const overlayId = "yt-dual-subtitles-overlay";
   const sourceLineId = "yt-dual-subtitles-source";
   const targetLineId = "yt-dual-subtitles-target";
-  const statusLineId = "yt-dual-subtitles-status";
   const translateMessageType = "ytDualSubtitles.translate";
   const enabledStorageKey = "ytDualSubtitles.enabled";
   const sourceLanguage = "fi";
@@ -59,19 +58,15 @@
     overlay.setAttribute("role", "status");
     overlay.setAttribute("aria-live", "polite");
 
-    const statusLine = document.createElement("div");
-    statusLine.id = statusLineId;
-    statusLine.textContent = "Waiting for YouTube captions...";
-
     const sourceLine = document.createElement("div");
     sourceLine.id = sourceLineId;
-    sourceLine.textContent = "Finnish: Turn on subtitles/CC in the YouTube player.";
+    sourceLine.textContent = "Turn on subtitles/CC in the YouTube player.";
 
     const targetLine = document.createElement("div");
     targetLine.id = targetLineId;
-    targetLine.textContent = "English: Waiting...";
+    targetLine.textContent = "Waiting...";
 
-    overlay.append(statusLine, sourceLine, targetLine);
+    overlay.append(sourceLine, targetLine);
     document.documentElement.appendChild(overlay);
 
     Object.assign(overlay.style, {
@@ -94,14 +89,6 @@
       fontFamily: "Arial, sans-serif",
       pointerEvents: "none",
       textAlign: "center"
-    });
-
-    Object.assign(statusLine.style, {
-      color: "#8ab4f8",
-      fontSize: "12px",
-      fontWeight: "700",
-      letterSpacing: "0.02em",
-      textTransform: "uppercase"
     });
 
     Object.assign(sourceLine.style, {
@@ -220,17 +207,16 @@
     return pendingTranslation;
   }
 
-  function setWaitingState(statusLine, sourceLine, targetLine) {
+  function setWaitingState(sourceLine, targetLine) {
     activeCaptionText = "";
     requestedCaptionText = "";
     activeTranslationRequestId += 1;
 
-    setText(statusLine, "Waiting for YouTube captions...");
-    setText(sourceLine, "Finnish: Turn on subtitles/CC in the YouTube player.");
-    setText(targetLine, "English: Waiting...");
+    setText(sourceLine, "Turn on subtitles/CC in the YouTube player.");
+    setText(targetLine, "Waiting...");
   }
 
-  function startTranslation(captionText, statusLine, targetLine) {
+  function startTranslation(captionText, targetLine) {
     requestedCaptionText = captionText;
     const requestId = activeTranslationRequestId + 1;
     activeTranslationRequestId = requestId;
@@ -241,8 +227,7 @@
           return;
         }
 
-        setText(statusLine, "Live caption translated");
-        setText(targetLine, `English: ${translation}`);
+        setText(targetLine, translation);
       })
       .catch((error) => {
         if (!isEnabled || requestId !== activeTranslationRequestId || captionText !== activeCaptionText) {
@@ -251,8 +236,7 @@
 
         const message = error instanceof Error ? error.message : String(error);
         console.error("YouTube Dual Subtitles translation failed", error);
-        setText(statusLine, "Live caption translation failed");
-        setText(targetLine, `English: Translation failed (${message})`);
+        setText(targetLine, `Translation failed (${message})`);
       });
   }
 
@@ -265,16 +249,15 @@
     const overlay = createOverlay();
     const sourceLine = overlay.querySelector(`#${sourceLineId}`);
     const targetLine = overlay.querySelector(`#${targetLineId}`);
-    const statusLine = overlay.querySelector(`#${statusLineId}`);
 
-    if (!sourceLine || !targetLine || !statusLine) {
+    if (!sourceLine || !targetLine) {
       throw new Error("Subtitle overlay was not created correctly.");
     }
 
     const captionText = getCurrentOrRecentCaptionText();
 
     if (!captionText) {
-      setWaitingState(statusLine, sourceLine, targetLine);
+      setWaitingState(sourceLine, targetLine);
       return;
     }
 
@@ -284,19 +267,17 @@
       activeTranslationRequestId += 1;
     }
 
-    setText(statusLine, "Translating live caption...");
-    setText(sourceLine, `Finnish: ${captionText}`);
+    setText(sourceLine, captionText);
 
     if (translationCache.has(captionText)) {
-      setText(statusLine, "Live caption translated");
-      setText(targetLine, `English: ${translationCache.get(captionText)}`);
+      setText(targetLine, translationCache.get(captionText));
       return;
     }
 
-    setText(targetLine, "English: Translating...");
+    setText(targetLine, "Translating...");
 
     if (requestedCaptionText !== captionText) {
-      startTranslation(captionText, statusLine, targetLine);
+      startTranslation(captionText, targetLine);
     }
   }
 
