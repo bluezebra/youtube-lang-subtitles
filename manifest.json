@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YouTube Dual Subtitles",
-  "description": "Step 6: translates live Finnish YouTube captions in a borderless overlay that hides native captions.",
-  "version": "0.6.0",
+  "description": "Step 7: translates live Finnish YouTube captions in a cleaner, stable overlay.",
+  "version": "0.7.0",
   "permissions": [
     "storage"
   ],

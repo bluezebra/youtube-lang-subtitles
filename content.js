@@ -30,6 +30,12 @@
     }
   }
 
+  function setHidden(element, hidden) {
+    if (element.hidden !== hidden) {
+      element.hidden = hidden;
+    }
+  }
+
   function resetCaptionState() {
     activeCaptionText = "";
     lastCaptionText = "";
@@ -87,11 +93,10 @@
 
     const sourceLine = document.createElement("div");
     sourceLine.id = sourceLineId;
-    sourceLine.textContent = "Turn on subtitles/CC in the YouTube player.";
 
     const targetLine = document.createElement("div");
     targetLine.id = targetLineId;
-    targetLine.textContent = "Waiting...";
+    targetLine.hidden = true;
 
     overlay.append(sourceLine, targetLine);
     document.documentElement.appendChild(overlay);
@@ -106,10 +111,11 @@
       flexDirection: "column",
       alignItems: "center",
       gap: "6px",
+      minWidth: "min(640px, calc(100vw - 32px))",
       maxWidth: "min(900px, calc(100vw - 32px))",
       padding: "12px 18px",
       color: "#ffffff",
-      background: "rgba(0, 0, 0, 0.82)",
+      background: "rgba(8, 8, 8, 0.68)",
       borderRadius: "10px",
       boxShadow: "0 4px 18px rgba(0, 0, 0, 0.45)",
       fontFamily: "Arial, sans-serif",
@@ -126,7 +132,7 @@
     });
 
     Object.assign(targetLine.style, {
-      color: "#ffd54f",
+      color: "#ffffff",
       fontSize: "24px",
       fontWeight: "700",
       lineHeight: "1.25",
@@ -233,15 +239,6 @@
     return pendingTranslation;
   }
 
-  function setWaitingState(sourceLine, targetLine) {
-    activeCaptionText = "";
-    requestedCaptionText = "";
-    activeTranslationRequestId += 1;
-
-    setText(sourceLine, "Turn on subtitles/CC in the YouTube player.");
-    setText(targetLine, "Waiting...");
-  }
-
   function startTranslation(captionText, targetLine) {
     requestedCaptionText = captionText;
     const requestId = activeTranslationRequestId + 1;
@@ -253,6 +250,7 @@
           return;
         }
 
+        setHidden(targetLine, false);
         setText(targetLine, translation);
       })
       .catch((error) => {
@@ -262,6 +260,7 @@
 
         const message = error instanceof Error ? error.message : String(error);
         console.error("YouTube Dual Subtitles translation failed", error);
+        setHidden(targetLine, false);
         setText(targetLine, `Translation failed (${message})`);
       });
   }
@@ -275,19 +274,20 @@
 
     setNativeCaptionsHidden(true);
 
+    const captionText = getCurrentOrRecentCaptionText();
+
+    if (!captionText) {
+      resetCaptionState();
+      hideOverlay();
+      return;
+    }
+
     const overlay = createOverlay();
     const sourceLine = overlay.querySelector(`#${sourceLineId}`);
     const targetLine = overlay.querySelector(`#${targetLineId}`);
 
     if (!sourceLine || !targetLine) {
       throw new Error("Subtitle overlay was not created correctly.");
-    }
-
-    const captionText = getCurrentOrRecentCaptionText();
-
-    if (!captionText) {
-      setWaitingState(sourceLine, targetLine);
-      return;
     }
 
     if (captionText !== activeCaptionText) {
@@ -299,11 +299,13 @@
     setText(sourceLine, captionText);
 
     if (translationCache.has(captionText)) {
+      setHidden(targetLine, false);
       setText(targetLine, translationCache.get(captionText));
       return;
     }
 
-    setText(targetLine, "Translating...");
+    setText(targetLine, "");
+    setHidden(targetLine, true);
 
     if (requestedCaptionText !== captionText) {
       startTranslation(captionText, targetLine);
