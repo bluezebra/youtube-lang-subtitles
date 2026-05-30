@@ -28,6 +28,7 @@ While enabled, YouTube's native caption layer is hidden so only the extension's 
 ## Files
 
 - `manifest.json` - Manifest V3 extension definition.
+- `icons/` - Extension icons used by Chrome, Brave, and the Chrome Web Store listing.
 - `content.js` - Runs on YouTube and renders the subtitle overlay.
 - `src/languages.js` - Defines shared source and target language options.
 - `src/overlaySettings.js` - Defines shared overlay display settings.
@@ -43,6 +44,10 @@ Run the Node unit tests with:
 ```powershell
 npm test
 ```
+
+## Privacy
+
+See `PRIVACY.md` for details about what data the extension handles and how caption text is sent for translation.
 
 ## License
 
