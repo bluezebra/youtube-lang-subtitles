@@ -5,7 +5,7 @@
   const targetLineId = "yt-dual-subtitles-target";
   const translateMessageType = "ytDualSubtitles.translate";
   const enabledStorageKey = "ytDualSubtitles.enabled";
-  const sourceLanguage = "fi";
+  const sourceLanguage = "auto";
   const targetLanguage = "en";
   const staleCaptionDelayMs = 1500;
 
