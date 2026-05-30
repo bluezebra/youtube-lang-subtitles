@@ -10,6 +10,8 @@
   const targetLanguage = "en";
   const staleCaptionDelayMs = 1500;
   const overlayHeightPx = 86;
+  const subtitleLineHeightPx = 30;
+  const subtitleLineGapPx = 4;
   const defaultTranslationDelayMs = 200;
 
   const translationState = YtDualSubtitlesTranslationState.createTranslationState({
@@ -145,7 +147,7 @@
     let overlay = document.getElementById(overlayId);
 
     if (overlay) {
-      overlay.style.display = "flex";
+      overlay.style.display = "grid";
       return overlay;
     }
 
@@ -169,11 +171,12 @@
       bottom: "12%",
       transform: "translateX(-50%)",
       zIndex: "2147483647",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "4px",
+      display: "grid",
+      gridTemplateRows: `${subtitleLineHeightPx}px ${subtitleLineHeightPx}px`,
+      alignContent: "center",
+      alignItems: "start",
+      justifyItems: "stretch",
+      rowGap: `${subtitleLineGapPx}px`,
       boxSizing: "border-box",
       height: `${overlayHeightPx}px`,
       width: "min(900px, calc(100vw - 32px))",
@@ -184,18 +187,18 @@
       boxShadow: "0 4px 18px rgba(0, 0, 0, 0.45)",
       fontFamily: "Arial, sans-serif",
       pointerEvents: "none",
-      textAlign: "center"
+      textAlign: "left"
     });
 
     Object.assign(sourceLine.style, {
       color: "rgba(255, 255, 255, 0.88)",
       fontSize: "24px",
       fontWeight: "700",
-      lineHeight: "1.25",
+      lineHeight: `${subtitleLineHeightPx}px`,
       width: "100%",
-      minHeight: "30px",
-      maxHeight: "30px",
+      height: `${subtitleLineHeightPx}px`,
       overflow: "hidden",
+      textAlign: "left",
       textShadow: "0 2px 4px rgba(0, 0, 0, 0.8)"
     });
 
@@ -203,11 +206,11 @@
       color: "rgba(255, 255, 255, 0.88)",
       fontSize: "24px",
       fontWeight: "700",
-      lineHeight: "1.25",
+      lineHeight: `${subtitleLineHeightPx}px`,
       width: "100%",
-      minHeight: "30px",
-      maxHeight: "30px",
+      height: `${subtitleLineHeightPx}px`,
       overflow: "hidden",
+      textAlign: "left",
       textShadow: "0 2px 4px rgba(0, 0, 0, 0.8)"
     });
 
