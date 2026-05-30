@@ -5,10 +5,8 @@
   const sourceOnlyLanguageOptions = Object.freeze([
     Object.freeze({ code: "auto", name: "Auto-detect" })
   ]);
-  const targetOnlyLanguageOptions = Object.freeze([
-    Object.freeze({ code: "en", name: "English" })
-  ]);
-  const sharedLanguageOptions = Object.freeze([
+  const concreteLanguageOptions = Object.freeze([
+    Object.freeze({ code: "en", name: "English" }),
     Object.freeze({ code: "ar", name: "Arabic" }),
     Object.freeze({ code: "zh-CN", name: "Chinese (Simplified)" }),
     Object.freeze({ code: "zh-TW", name: "Chinese (Traditional)" }),
@@ -29,8 +27,8 @@
     Object.freeze({ code: "tr", name: "Turkish" }),
     Object.freeze({ code: "uk", name: "Ukrainian" })
   ]);
-  const sourceLanguageOptions = Object.freeze(sourceOnlyLanguageOptions.concat(sharedLanguageOptions));
-  const targetLanguageOptions = Object.freeze(targetOnlyLanguageOptions.concat(sharedLanguageOptions));
+  const sourceLanguageOptions = Object.freeze(sourceOnlyLanguageOptions.concat(concreteLanguageOptions));
+  const targetLanguageOptions = concreteLanguageOptions;
   const sourceLanguageCodes = new Set(sourceLanguageOptions.map((option) => option.code));
   const targetLanguageCodes = new Set(targetLanguageOptions.map((option) => option.code));
   const languageNames = Object.freeze(
