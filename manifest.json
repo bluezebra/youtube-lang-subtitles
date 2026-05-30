@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YouTube Dual Subtitles",
-  "description": "Step 1: shows a Hello World banner on YouTube so you can verify the extension is running.",
-  "version": "0.1.0",
+  "description": "Step 2: mirrors YouTube's currently displayed captions into a custom overlay.",
+  "version": "0.2.0",
   "content_scripts": [
     {
       "matches": [
