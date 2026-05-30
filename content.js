@@ -8,6 +8,7 @@
   const sourceLanguage = "auto";
   const targetLanguage = "en";
   const staleCaptionDelayMs = 1500;
+  const overlayHeightPx = 86;
 
   const translationState = YtDualSubtitlesTranslationState.createTranslationState({
     translate: translateWithGoogle
@@ -76,6 +77,67 @@
     document.documentElement.appendChild(style);
   }
 
+  function findPlayerElement() {
+    return (
+      document.querySelector(".html5-video-player") ||
+      document.getElementById("movie_player") ||
+      document.querySelector("ytd-player") ||
+      document.querySelector("#player-container") ||
+      document.querySelector("video")
+    );
+  }
+
+  function getPlayerRect() {
+    const playerElement = findPlayerElement();
+
+    if (!playerElement) {
+      return null;
+    }
+
+    const rect = playerElement.getBoundingClientRect();
+
+    return {
+      left: rect.left,
+      right: rect.right,
+      top: rect.top,
+      bottom: rect.bottom,
+      width: rect.width,
+      height: rect.height
+    };
+  }
+
+  function getViewportSize() {
+    return {
+      width: window.innerWidth || document.documentElement.clientWidth,
+      height: window.innerHeight || document.documentElement.clientHeight
+    };
+  }
+
+  function positionOverlay(overlay) {
+    const position = YtDualSubtitlesOverlayPosition.calculateOverlayPosition(
+      getPlayerRect(),
+      getViewportSize(),
+      {
+        overlayHeight: overlayHeightPx
+      }
+    );
+
+    if (!position) {
+      Object.assign(overlay.style, {
+        left: "50%",
+        bottom: "12%",
+        width: "min(900px, calc(100vw - 32px))"
+      });
+      return;
+    }
+
+    Object.assign(overlay.style, {
+      left: `${position.left}px`,
+      bottom: `${position.bottom}px`,
+      width: `${position.width}px`
+    });
+  }
+
   function createOverlay() {
     let overlay = document.getElementById(overlayId);
 
@@ -110,9 +172,8 @@
       justifyContent: "center",
       gap: "4px",
       boxSizing: "border-box",
-      height: "86px",
-      minWidth: "min(640px, calc(100vw - 32px))",
-      maxWidth: "min(900px, calc(100vw - 32px))",
+      height: `${overlayHeightPx}px`,
+      width: "min(900px, calc(100vw - 32px))",
       padding: "8px 18px",
       color: "rgba(255, 255, 255, 0.88)",
       background: "rgba(8, 8, 8, 0.68)",
@@ -268,6 +329,8 @@
     }
 
     const overlay = createOverlay();
+    positionOverlay(overlay);
+
     const sourceLine = overlay.querySelector(`#${sourceLineId}`);
     const targetLine = overlay.querySelector(`#${targetLineId}`);
 
@@ -352,6 +415,9 @@
     });
 
     document.addEventListener("yt-navigate-finish", scheduleUpdate);
+    document.addEventListener("fullscreenchange", scheduleUpdate);
+    window.addEventListener("resize", scheduleUpdate, { passive: true });
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.setInterval(scheduleUpdate, 500);
   }
 

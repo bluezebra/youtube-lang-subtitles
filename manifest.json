@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YouTube Dual Subtitles",
-  "description": "Step 9: auto-detects live YouTube caption language and translates to English.",
-  "version": "0.9.0",
+  "description": "Step 10: keeps the dual subtitle overlay anchored to the YouTube player.",
+  "version": "0.10.0",
   "permissions": [
     "storage"
   ],
@@ -24,6 +24,7 @@
       ],
       "js": [
         "src/translationState.js",
+        "src/overlayPosition.js",
         "content.js"
       ],
       "run_at": "document_idle"
