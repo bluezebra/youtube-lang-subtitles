@@ -1,8 +1,14 @@
 {
   "manifest_version": 3,
   "name": "YouTube Dual Subtitles",
-  "description": "Step 2: mirrors YouTube's currently displayed captions into a custom overlay.",
-  "version": "0.2.0",
+  "description": "Step 3: translates a hardcoded Finnish test phrase and displays Finnish above English.",
+  "version": "0.3.0",
+  "host_permissions": [
+    "https://translate.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [

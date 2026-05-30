@@ -1,15 +1,10 @@
 (function () {
   const overlayId = "yt-dual-subtitles-overlay";
   const sourceLineId = "yt-dual-subtitles-source";
+  const targetLineId = "yt-dual-subtitles-target";
   const statusLineId = "yt-dual-subtitles-status";
-
-  let lastCaptionText = "";
-  let lastCaptionSeenAt = 0;
-  let updateScheduled = false;
-
-  function normalizeCaptionText(text) {
-    return text.replace(/\s+/g, " ").trim();
-  }
+  const translateMessageType = "ytDualSubtitles.translate";
+  const testPhrase = "Hei maailma";
 
   function setText(element, text) {
     if (element.textContent !== text) {
@@ -31,13 +26,17 @@
 
     const statusLine = document.createElement("div");
     statusLine.id = statusLineId;
-    statusLine.textContent = "Waiting for YouTube captions...";
+    statusLine.textContent = "Testing Google Translate...";
 
     const sourceLine = document.createElement("div");
     sourceLine.id = sourceLineId;
-    sourceLine.textContent = "Turn on subtitles/CC in the YouTube player.";
+    sourceLine.textContent = `Finnish: ${testPhrase}`;
 
-    overlay.append(statusLine, sourceLine);
+    const targetLine = document.createElement("div");
+    targetLine.id = targetLineId;
+    targetLine.textContent = "English: Translating...";
+
+    overlay.append(statusLine, sourceLine, targetLine);
     document.documentElement.appendChild(overlay);
 
     Object.assign(overlay.style, {
@@ -71,6 +70,15 @@
     });
 
     Object.assign(sourceLine.style, {
+      color: "#ffffff",
+      fontSize: "24px",
+      fontWeight: "700",
+      lineHeight: "1.25",
+      textShadow: "0 2px 4px rgba(0, 0, 0, 0.8)"
+    });
+
+    Object.assign(targetLine.style, {
+      color: "#ffd54f",
       fontSize: "24px",
       fontWeight: "700",
       lineHeight: "1.25",
@@ -80,89 +88,68 @@
     return overlay;
   }
 
-  function readYouTubeCaptionText() {
-    const container = document.querySelector(".ytp-caption-window-container");
+  function translateWithGoogle(text, sourceLanguage, targetLanguage) {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(
+        {
+          type: translateMessageType,
+          text,
+          sourceLanguage,
+          targetLanguage
+        },
+        (response) => {
+          const runtimeError = chrome.runtime.lastError;
 
-    if (!container) {
-      return "";
-    }
+          if (runtimeError) {
+            reject(new Error(runtimeError.message));
+            return;
+          }
 
-    const segmentText = Array.from(
-      container.querySelectorAll(".ytp-caption-segment")
-    )
-      .map((segment) => normalizeCaptionText(segment.textContent || ""))
-      .filter(Boolean)
-      .join(" ");
+          if (!response) {
+            reject(new Error("No translation response received."));
+            return;
+          }
 
-    if (segmentText) {
-      return normalizeCaptionText(segmentText);
-    }
+          if (!response.ok) {
+            reject(new Error(response.error || "Translation failed."));
+            return;
+          }
 
-    const windowText = Array.from(container.querySelectorAll(".caption-window"))
-      .map((captionWindow) => normalizeCaptionText(captionWindow.textContent || ""))
-      .filter(Boolean)
-      .join(" ");
-
-    return normalizeCaptionText(windowText);
+          resolve(response.translation);
+        }
+      );
+    });
   }
 
-  function updateOverlay() {
+  async function runTranslationTest() {
     const overlay = createOverlay();
     const sourceLine = overlay.querySelector(`#${sourceLineId}`);
+    const targetLine = overlay.querySelector(`#${targetLineId}`);
     const statusLine = overlay.querySelector(`#${statusLineId}`);
-    const captionText = readYouTubeCaptionText();
 
-    if (!sourceLine || !statusLine) {
-      return;
+    if (!sourceLine || !targetLine || !statusLine) {
+      throw new Error("Translation overlay was not created correctly.");
     }
 
-    if (captionText) {
-      lastCaptionText = captionText;
-      lastCaptionSeenAt = Date.now();
-      setText(statusLine, "Mirrored YouTube caption");
-      setText(sourceLine, captionText);
-      return;
+    setText(statusLine, "Testing Google Translate...");
+    setText(sourceLine, `Finnish: ${testPhrase}`);
+    setText(targetLine, "English: Translating...");
+
+    try {
+      const translation = await translateWithGoogle(testPhrase, "fi", "en");
+      setText(statusLine, "Google Translate test complete");
+      setText(targetLine, `English: ${translation}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("YouTube Dual Subtitles translation test failed", error);
+      setText(statusLine, "Google Translate test failed");
+      setText(targetLine, `English: Translation failed (${message})`);
     }
-
-    if (lastCaptionText && Date.now() - lastCaptionSeenAt < 1500) {
-      setText(statusLine, "Mirrored YouTube caption");
-      setText(sourceLine, lastCaptionText);
-      return;
-    }
-
-    setText(statusLine, "Waiting for YouTube captions...");
-    setText(sourceLine, "Turn on subtitles/CC in the YouTube player.");
-  }
-
-  function scheduleUpdate() {
-    if (updateScheduled) {
-      return;
-    }
-
-    updateScheduled = true;
-    requestAnimationFrame(() => {
-      updateScheduled = false;
-      updateOverlay();
-    });
-  }
-
-  function startCaptionMirroring() {
-    updateOverlay();
-
-    const observer = new MutationObserver(scheduleUpdate);
-    observer.observe(document.body || document.documentElement, {
-      childList: true,
-      subtree: true,
-      characterData: true
-    });
-
-    document.addEventListener("yt-navigate-finish", scheduleUpdate);
-    window.setInterval(scheduleUpdate, 500);
   }
 
   if (document.body) {
-    startCaptionMirroring();
+    runTranslationTest();
   } else {
-    document.addEventListener("DOMContentLoaded", startCaptionMirroring, { once: true });
+    document.addEventListener("DOMContentLoaded", runTranslationTest, { once: true });
   }
 })();
