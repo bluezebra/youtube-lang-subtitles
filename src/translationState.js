@@ -16,11 +16,13 @@
     let isEnabled = !options || options.enabled !== false;
     let activeCaptionText = "";
     let requestedCaptionText = "";
+    let lastTranslatedText = "";
     let activeTranslationRequestId = 0;
 
     function resetCaptionState() {
       activeCaptionText = "";
       requestedCaptionText = "";
+      lastTranslatedText = "";
       activeTranslationRequestId += 1;
     }
 
@@ -87,10 +89,12 @@
       }
 
       if (translationCache.has(normalizedCaptionText)) {
+        lastTranslatedText = translationCache.get(normalizedCaptionText);
+
         return {
           visible: true,
           sourceText: normalizedCaptionText,
-          targetText: translationCache.get(normalizedCaptionText),
+          targetText: lastTranslatedText,
           targetVisible: true,
           requestStarted: false
         };
@@ -112,6 +116,8 @@
             ) {
               return;
             }
+
+            lastTranslatedText = translation;
 
             if (handlers && typeof handlers.onTranslation === "function") {
               handlers.onTranslation(translation, normalizedCaptionText);
@@ -135,8 +141,8 @@
       return {
         visible: true,
         sourceText: normalizedCaptionText,
-        targetText: "",
-        targetVisible: false,
+        targetText: lastTranslatedText,
+        targetVisible: Boolean(lastTranslatedText),
         requestStarted
       };
     }

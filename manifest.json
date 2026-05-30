@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YouTube Dual Subtitles",
-  "description": "Step 10: keeps the dual subtitle overlay anchored to the YouTube player.",
-  "version": "0.10.0",
+  "description": "Step 11: keeps previous translations visible during fast captions.",
+  "version": "0.11.0",
   "permissions": [
     "storage"
   ],

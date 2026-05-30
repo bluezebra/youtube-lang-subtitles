@@ -131,3 +131,64 @@ test("empty or no caption state indicates overlay should be hidden", () => {
     reason: "empty"
   });
 });
+
+test("keeps previous translation visible while a new caption is translating", async () => {
+  const firstTranslation = deferred();
+  const secondTranslation = deferred();
+  const translations = {
+    first: firstTranslation,
+    second: secondTranslation
+  };
+  const applied = [];
+  const state = createTranslationState({
+    translate(text) {
+      return translations[text].promise;
+    }
+  });
+
+  assert.deepEqual(
+    state.updateCaption("first", {
+      onTranslation(translation, captionText) {
+        applied.push({ translation, captionText });
+      }
+    }),
+    {
+      visible: true,
+      sourceText: "first",
+      targetText: "",
+      targetVisible: false,
+      requestStarted: true
+    }
+  );
+
+  firstTranslation.resolve("first translated");
+  await firstTranslation.promise;
+  await flushPromiseHandlers();
+
+  assert.deepEqual(applied, [
+    { translation: "first translated", captionText: "first" }
+  ]);
+  assert.deepEqual(
+    state.updateCaption("second", {
+      onTranslation(translation, captionText) {
+        applied.push({ translation, captionText });
+      }
+    }),
+    {
+      visible: true,
+      sourceText: "second",
+      targetText: "first translated",
+      targetVisible: true,
+      requestStarted: true
+    }
+  );
+
+  secondTranslation.resolve("second translated");
+  await secondTranslation.promise;
+  await flushPromiseHandlers();
+
+  assert.deepEqual(applied, [
+    { translation: "first translated", captionText: "first" },
+    { translation: "second translated", captionText: "second" }
+  ]);
+});
