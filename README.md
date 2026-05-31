@@ -53,7 +53,7 @@ See `PRIVACY.md` for details about what data the extension handles and how capti
 
 If this extension is useful, you can support development here:
 
-[Buy me a coffee](https://buymeacoffee.com/bluezebrafish)
+[![Coffee cup](assets/coffee.svg) Buy me a coffee](https://buymeacoffee.com/bluezebrafish)
 
 ## License
 

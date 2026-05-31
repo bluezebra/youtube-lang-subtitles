@@ -54,6 +54,28 @@
         line-height: 1.4;
       }
 
+      .support {
+        margin-top: 14px;
+      }
+
+      .support a {
+        align-items: center;
+        color: #1a73e8;
+        display: inline-flex;
+        font-weight: 700;
+        gap: 6px;
+        text-decoration: none;
+      }
+
+      .support a:hover {
+        text-decoration: underline;
+      }
+
+      .support img {
+        height: 18px;
+        width: 18px;
+      }
+
       #status {
         color: #5f6368;
       }
@@ -83,7 +105,13 @@
     </div>
     <p id="status"></p>
     <p>Open a YouTube video with captions, then choose the source and target languages.</p>
-    <p>If translations lag behind fast speech, try slowing YouTube playback slightly.</p>
+    <p>If translations lag behind fast speech, try choosing the source language instead of Auto-detect, or slow YouTube playback slightly.</p>
+    <p class="support">
+      <a href="https://buymeacoffee.com/bluezebrafish" target="_blank" rel="noopener noreferrer">
+        <img src="assets/coffee.svg" alt="" aria-hidden="true">
+        Buy me a coffee
+      </a>
+    </p>
     <script src="src/languages.js"></script>
     <script src="src/overlaySettings.js"></script>
     <script src="popup.js"></script>

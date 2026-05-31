@@ -23,6 +23,8 @@ Copilot Session: 292adaa1-edad-49ae-b96c-b97409ec8ed0
   - `32x32`
   - `48x48`
   - `128x128` PNG, required for Chrome Web Store upload.
+- Runtime support icon included:
+  - `assets/coffee.svg`
 - Create a ZIP with `manifest.json` at the ZIP root.
 
 ## Store listing draft

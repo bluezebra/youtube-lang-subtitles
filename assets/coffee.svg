@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" role="img" aria-labelledby="title">
+  <title id="title">Coffee cup</title>
+  <path fill="#ffdd00" d="M4 7h9v5.5A3.5 3.5 0 0 1 9.5 16h-2A3.5 3.5 0 0 1 4 12.5V7Z"/>
+  <path fill="#111827" d="M13 8h1.25a2.75 2.75 0 0 1 0 5.5H13V12h1.25a1.25 1.25 0 0 0 0-2.5H13V8ZM3 17h12v1.5H3V17Z"/>
+  <path fill="#111827" d="M6 2.25h1.5V5H6V2.25Zm3.25 0h1.5V5h-1.5V2.25Z"/>
+</svg>
