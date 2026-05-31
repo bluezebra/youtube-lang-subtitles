@@ -15,7 +15,7 @@
     );
 
     if (settings.verticalPosition === "top") {
-      return viewport.height - playerRect.top - edgeOffset - settings.overlayHeight;
+      return viewport.height - playerRect.top - settings.overlayHeight;
     }
 
     if (settings.verticalPosition === "middle") {
@@ -62,11 +62,14 @@
     const desiredLeft = playerRect.left + playerRect.width / 2;
     const left = clamp(desiredLeft, minLeft, Math.max(minLeft, maxLeft));
     const desiredBottom = calculateDesiredBottom(playerRect, viewport, settings);
+    const minBottom = settings.verticalPosition === "top" ? 0 : settings.verticalMargin;
     const maxBottom = Math.max(
-      settings.verticalMargin,
-      viewport.height - settings.overlayHeight - settings.verticalMargin
+      minBottom,
+      viewport.height -
+        settings.overlayHeight -
+        (settings.verticalPosition === "top" ? 0 : settings.verticalMargin)
     );
-    const bottom = clamp(desiredBottom, settings.verticalMargin, maxBottom);
+    const bottom = clamp(desiredBottom, minBottom, maxBottom);
 
     return {
       left,

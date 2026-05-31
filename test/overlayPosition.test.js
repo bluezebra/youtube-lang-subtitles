@@ -16,7 +16,7 @@ test("centers the overlay over the YouTube player", () => {
   });
 });
 
-test("positions the overlay near the top of the YouTube player", () => {
+test("positions the overlay at the top of the YouTube player", () => {
   const position = calculateOverlayPosition(
     { left: 100, right: 1100, top: 100, bottom: 700, width: 1000, height: 600 },
     { width: 1200, height: 800 },
@@ -25,7 +25,21 @@ test("positions the overlay near the top of the YouTube player", () => {
 
   assert.deepEqual(position, {
     left: 600,
-    bottom: 554,
+    bottom: 614,
+    width: 900
+  });
+});
+
+test("allows the top overlay to align with a fullscreen video top edge", () => {
+  const position = calculateOverlayPosition(
+    { left: 0, right: 1200, top: 0, bottom: 800, width: 1200, height: 800 },
+    { width: 1200, height: 800 },
+    { overlayHeight: 86, verticalPosition: "top" }
+  );
+
+  assert.deepEqual(position, {
+    left: 600,
+    bottom: 714,
     width: 900
   });
 });

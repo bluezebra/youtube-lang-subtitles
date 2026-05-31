@@ -10,7 +10,13 @@ const {
 
 test("defines bottom as the default overlay position", () => {
   assert.equal(defaultOverlayPosition, "bottom");
-  assert.equal(overlayPositionOptions[0].value, "bottom");
+});
+
+test("orders overlay position options from top to bottom", () => {
+  assert.deepEqual(
+    overlayPositionOptions.map((option) => option.value),
+    ["top", "middle", "bottom"]
+  );
 });
 
 test("normalizes overlay position values", () => {

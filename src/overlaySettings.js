@@ -1,9 +1,9 @@
 (function (root) {
   const defaultOverlayPosition = "bottom";
   const overlayPositionOptions = Object.freeze([
-    Object.freeze({ value: "bottom", label: "Bottom" }),
+    Object.freeze({ value: "top", label: "Top" }),
     Object.freeze({ value: "middle", label: "Middle" }),
-    Object.freeze({ value: "top", label: "Top" })
+    Object.freeze({ value: "bottom", label: "Bottom" })
   ]);
   const overlayPositionValues = new Set(overlayPositionOptions.map((option) => option.value));
   const overlayPositionLabels = Object.freeze(
