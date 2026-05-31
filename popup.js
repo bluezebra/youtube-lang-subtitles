@@ -5,6 +5,7 @@ const overlayPositionStorageKey = "ytDualSubtitles.overlayPosition";
 const {
   defaultSourceLanguage,
   defaultTargetLanguage,
+  filterLanguageOptions,
   normalizeSourceLanguage,
   normalizeTargetLanguage,
   sourceLanguageOptions,
@@ -17,13 +18,21 @@ const {
 } = YtDualSubtitlesOverlaySettings;
 
 const enabledCheckbox = document.getElementById("enabled");
+const sourceLanguageSearchInput = document.getElementById("source-language-search");
 const sourceLanguageSelect = document.getElementById("source-language");
+const targetLanguageSearchInput = document.getElementById("target-language-search");
 const targetLanguageSelect = document.getElementById("target-language");
 const overlayPositionSelect = document.getElementById("overlay-position");
 const statusText = document.getElementById("status");
+let selectedSourceLanguage = defaultSourceLanguage;
+let selectedTargetLanguage = defaultTargetLanguage;
 
 function setStatus(text) {
   statusText.textContent = text;
+}
+
+function clearStatus() {
+  setStatus("");
 }
 
 function setCheckboxEnabled(enabled) {
@@ -32,13 +41,17 @@ function setCheckboxEnabled(enabled) {
 }
 
 function setSourceLanguageSelectEnabled(language) {
-  sourceLanguageSelect.value = normalizeSourceLanguage(language);
+  selectedSourceLanguage = normalizeSourceLanguage(language);
+  renderSourceLanguageSelect();
   sourceLanguageSelect.disabled = false;
+  sourceLanguageSearchInput.disabled = false;
 }
 
 function setTargetLanguageSelectEnabled(language) {
-  targetLanguageSelect.value = normalizeTargetLanguage(language);
+  selectedTargetLanguage = normalizeTargetLanguage(language);
+  renderTargetLanguageSelect();
   targetLanguageSelect.disabled = false;
+  targetLanguageSearchInput.disabled = false;
 }
 
 function setOverlayPositionSelectEnabled(position) {
@@ -59,8 +72,67 @@ function populateSelect(select, options, valueProperty, labelProperty) {
   select.replaceChildren(...optionElements);
 }
 
-populateSelect(sourceLanguageSelect, sourceLanguageOptions, "code", "name");
-populateSelect(targetLanguageSelect, targetLanguageOptions, "code", "name");
+function createLanguageOption(option) {
+  const optionElement = document.createElement("option");
+
+  optionElement.value = option.code;
+  optionElement.textContent = option.name;
+
+  return optionElement;
+}
+
+function populateLanguageSelect(select, options, searchText, selectedValue, defaultValue) {
+  const filteredOptions = filterLanguageOptions(options, searchText);
+  const selectedOption = options.find((option) => option.code === selectedValue);
+  const defaultOption = options.find((option) => option.code === defaultValue);
+  const visibleLanguageOptions = filteredOptions.filter((option) => option.code !== defaultValue);
+  const languageOptions = selectedOption &&
+    selectedOption.code !== defaultValue &&
+    !visibleLanguageOptions.some((option) => option.code === selectedValue)
+    ? [selectedOption].concat(visibleLanguageOptions)
+    : visibleLanguageOptions;
+  const groups = [];
+
+  if (defaultOption) {
+    const defaultGroup = document.createElement("optgroup");
+    defaultGroup.label = "Default";
+    defaultGroup.append(createLanguageOption(defaultOption));
+    groups.push(defaultGroup);
+  }
+
+  if (languageOptions.length > 0) {
+    const languagesGroup = document.createElement("optgroup");
+    languagesGroup.label = "Languages";
+    languagesGroup.append(...languageOptions.map(createLanguageOption));
+    groups.push(languagesGroup);
+  }
+
+  select.replaceChildren(...groups);
+  select.value = selectedValue;
+}
+
+function renderSourceLanguageSelect() {
+  populateLanguageSelect(
+    sourceLanguageSelect,
+    sourceLanguageOptions,
+    sourceLanguageSearchInput.value,
+    selectedSourceLanguage,
+    defaultSourceLanguage
+  );
+}
+
+function renderTargetLanguageSelect() {
+  populateLanguageSelect(
+    targetLanguageSelect,
+    targetLanguageOptions,
+    targetLanguageSearchInput.value,
+    selectedTargetLanguage,
+    defaultTargetLanguage
+  );
+}
+
+renderSourceLanguageSelect();
+renderTargetLanguageSelect();
 populateSelect(overlayPositionSelect, overlayPositionOptions, "value", "label");
 
 chrome.storage.sync.get(
@@ -74,7 +146,9 @@ chrome.storage.sync.get(
     const runtimeError = chrome.runtime.lastError;
     if (runtimeError) {
       enabledCheckbox.disabled = true;
+      sourceLanguageSearchInput.disabled = true;
       sourceLanguageSelect.disabled = true;
+      targetLanguageSearchInput.disabled = true;
       targetLanguageSelect.disabled = true;
       overlayPositionSelect.disabled = true;
       setStatus(`Could not load setting: ${runtimeError.message}`);
@@ -106,6 +180,7 @@ enabledCheckbox.addEventListener("change", () => {
 });
 
 sourceLanguageSelect.addEventListener("change", () => {
+  sourceLanguageSearchInput.disabled = true;
   sourceLanguageSelect.disabled = true;
   const sourceLanguage = normalizeSourceLanguage(sourceLanguageSelect.value);
 
@@ -113,6 +188,7 @@ sourceLanguageSelect.addEventListener("change", () => {
     const runtimeError = chrome.runtime.lastError;
 
     if (runtimeError) {
+      sourceLanguageSearchInput.disabled = false;
       sourceLanguageSelect.disabled = false;
       setStatus(`Could not save language: ${runtimeError.message}`);
       return;
@@ -124,6 +200,7 @@ sourceLanguageSelect.addEventListener("change", () => {
 });
 
 targetLanguageSelect.addEventListener("change", () => {
+  targetLanguageSearchInput.disabled = true;
   targetLanguageSelect.disabled = true;
   const targetLanguage = normalizeTargetLanguage(targetLanguageSelect.value);
 
@@ -131,6 +208,7 @@ targetLanguageSelect.addEventListener("change", () => {
     const runtimeError = chrome.runtime.lastError;
 
     if (runtimeError) {
+      targetLanguageSearchInput.disabled = false;
       targetLanguageSelect.disabled = false;
       setStatus(`Could not save target language: ${runtimeError.message}`);
       return;
@@ -157,4 +235,12 @@ overlayPositionSelect.addEventListener("change", () => {
     setOverlayPositionSelectEnabled(overlayPosition);
     clearStatus();
   });
+});
+
+sourceLanguageSearchInput.addEventListener("input", () => {
+  renderSourceLanguageSelect();
+});
+
+targetLanguageSearchInput.addEventListener("input", () => {
+  renderTargetLanguageSelect();
 });

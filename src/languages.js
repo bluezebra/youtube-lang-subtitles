@@ -75,9 +75,23 @@
     return defaultTargetLanguage;
   }
 
+  function filterLanguageOptions(options, query) {
+    const searchText = String(query || "").trim().toLowerCase();
+
+    if (!searchText) {
+      return options.slice();
+    }
+
+    return options.filter((option) =>
+      option.code.toLowerCase().includes(searchText) ||
+      option.name.toLowerCase().includes(searchText)
+    );
+  }
+
   const api = {
     defaultSourceLanguage,
     defaultTargetLanguage,
+    filterLanguageOptions,
     languageNames,
     normalizeSourceLanguage,
     normalizeTargetLanguage,

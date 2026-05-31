@@ -10,7 +10,7 @@ On YouTube, the extension reads the currently displayed caption and shows:
 - The Google Translate result underneath, using popup-selected source and target languages
 
 Translations are cached while the page is open so repeated caption text does not call Google Translate again. During fast captions, the previous translation stays visible until the new translation arrives, and rapid partial caption changes are debounced before sending a translation request.
-The extension popup includes an **Enable dual subtitles** checkbox, expanded **Source language** and **Target language** selectors, and a **Position** selector for moving the overlay between bottom, middle, and top. Turning the extension off hides the overlay, restores YouTube's native captions, and stops new translation requests.
+The extension popup includes an **Enable dual subtitles** checkbox, searchable **Source language** and **Target language** selectors, and a **Position** selector for moving the overlay between bottom, middle, and top. Turning the extension off hides the overlay, restores YouTube's native captions, and stops new translation requests.
 While enabled, YouTube's native caption layer is hidden so only the extension's borderless dual-subtitle overlay is visible. The overlay stays hidden when there is no caption text to translate, uses a stable width and height to reduce jumping, follows the YouTube player during resize/layout changes, and displays both subtitle lines in white.
 
 ## Load in Chrome or Brave

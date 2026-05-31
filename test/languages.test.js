@@ -4,6 +4,7 @@ const test = require("node:test");
 const {
   defaultSourceLanguage,
   defaultTargetLanguage,
+  filterLanguageOptions,
   languageNames,
   normalizeSourceLanguage,
   normalizeTargetLanguage,
@@ -69,6 +70,22 @@ test("includes popular additional language options", () => {
     assert.equal(sourceLanguageOptions.some((option) => option.code === code && option.name === name), true);
     assert.equal(targetLanguageOptions.some((option) => option.code === code && option.name === name), true);
   }
+});
+
+test("filters language options by name or code", () => {
+  assert.deepEqual(
+    filterLanguageOptions(targetLanguageOptions, "indo").map((option) => option.code),
+    ["id"]
+  );
+  assert.deepEqual(
+    filterLanguageOptions(targetLanguageOptions, "fa").map((option) => option.code),
+    ["fa"]
+  );
+  assert.deepEqual(
+    filterLanguageOptions(targetLanguageOptions, "ZH").map((option) => option.code),
+    ["zh-CN", "zh-TW"]
+  );
+  assert.equal(filterLanguageOptions(targetLanguageOptions, "").length, targetLanguageOptions.length);
 });
 
 test("provides labels for every popup option", () => {

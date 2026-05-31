@@ -26,7 +26,7 @@
         font-weight: 700;
       }
 
-      input {
+      input[type="checkbox"] {
         width: 18px;
         height: 18px;
       }
@@ -43,6 +43,14 @@
       select {
         width: 100%;
         box-sizing: border-box;
+        padding: 6px;
+        font: inherit;
+      }
+
+      .language-search {
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 6px;
         padding: 6px;
         font: inherit;
       }
@@ -93,10 +101,12 @@
     </label>
     <div class="field">
       <label for="source-language">Source language</label>
+      <input id="source-language-search" class="language-search" type="search" placeholder="Search source languages" aria-label="Search source languages" autocomplete="off" disabled>
       <select id="source-language" disabled></select>
     </div>
     <div class="field">
       <label for="target-language">Target language</label>
+      <input id="target-language-search" class="language-search" type="search" placeholder="Search target languages" aria-label="Search target languages" autocomplete="off" disabled>
       <select id="target-language" disabled></select>
     </div>
     <div class="field">
