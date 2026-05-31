@@ -18,6 +18,10 @@
     defaultOverlayPosition,
     normalizeOverlayPosition
   } = YtDualSubtitlesOverlaySettings;
+  const {
+    formatTranslationErrorForOverlay,
+    isExtensionContextInvalidatedError
+  } = YtDualSubtitlesTranslationErrors;
   const staleCaptionDelayMs = 1500;
   const overlayHeightPx = 86;
   const subtitleLineHeightPx = 30;
@@ -37,6 +41,7 @@
   let targetLanguage = defaultTargetLanguage;
   let overlayVerticalPosition = defaultOverlayPosition;
   let updateScheduled = false;
+  let pageRefreshRequired = false;
 
   function normalizeCaptionText(text) {
     return YtDualSubtitlesTranslationState.normalizeCaptionText(text);
@@ -76,6 +81,34 @@
     if (overlay) {
       overlay.style.display = "none";
     }
+  }
+
+  function renderRefreshRequiredOverlay() {
+    const overlay = createOverlay();
+    positionOverlay(overlay);
+
+    const sourceLine = overlay.querySelector(`#${sourceLineId}`);
+    const targetLine = overlay.querySelector(`#${targetLineId}`);
+
+    if (!sourceLine || !targetLine) {
+      throw new Error("Subtitle overlay was not created correctly.");
+    }
+
+    setText(sourceLine, getCurrentOrRecentCaptionText() || "Extension updated");
+    setText(targetLine, formatTranslationErrorForOverlay(new Error("Extension context invalidated.")));
+    setInvisible(targetLine, false);
+    setTargetLineStale(targetLine, false);
+  }
+
+  function pauseTranslationsUntilRefresh(error) {
+    if (pageRefreshRequired) {
+      return;
+    }
+
+    pageRefreshRequired = true;
+    translationState.setEnabled(false);
+    console.error("YouTube Dual Subtitles requires a page refresh after extension update", error);
+    renderRefreshRequiredOverlay();
   }
 
   function setNativeCaptionsHidden(hidden) {
@@ -361,6 +394,11 @@
 
     setNativeCaptionsHidden(true);
 
+    if (pageRefreshRequired) {
+      renderRefreshRequiredOverlay();
+      return;
+    }
+
     const captionText = getCurrentOrRecentCaptionText();
 
     const captionState = translationState.updateCaption(captionText, {
@@ -382,11 +420,15 @@
           return;
         }
 
-        const message = error instanceof Error ? error.message : String(error);
+        if (isExtensionContextInvalidatedError(error)) {
+          pauseTranslationsUntilRefresh(error);
+          return;
+        }
+
         console.error("YouTube Dual Subtitles translation failed", error);
         setInvisible(targetLine, false);
         setTargetLineStale(targetLine, false);
-        setText(targetLine, `Translation failed (${message})`);
+        setText(targetLine, formatTranslationErrorForOverlay(error));
       }
     });
 
