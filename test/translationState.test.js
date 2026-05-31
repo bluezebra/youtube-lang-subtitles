@@ -253,6 +253,148 @@ test("keeps previous translation visible while a new caption is translating", as
   ]);
 });
 
+test("delays source caption while translation is pending", () => {
+  const scheduler = createManualScheduler();
+  const translation = deferred();
+  const revealed = [];
+  const state = createTranslationState({
+    sourceDelayMs: 300,
+    setTimeout: scheduler.setTimeout,
+    clearTimeout: scheduler.clearTimeout,
+    translate() {
+      return translation.promise;
+    }
+  });
+
+  assert.deepEqual(
+    state.updateCaption("hello", {
+      onSourceDelayElapsed(captionText) {
+        revealed.push(captionText);
+      }
+    }),
+    {
+      visible: true,
+      sourceText: "",
+      targetText: "",
+      targetVisible: false,
+      targetStale: false,
+      requestStarted: true
+    }
+  );
+  assert.equal(scheduler.timers[0].delay, 300);
+
+  scheduler.runPending();
+
+  assert.deepEqual(revealed, ["hello"]);
+  assert.deepEqual(state.updateCaption("hello"), {
+    visible: true,
+    sourceText: "hello",
+    targetText: "",
+    targetVisible: false,
+    targetStale: false,
+    requestStarted: false
+  });
+});
+
+test("fast translations reveal delayed source and target together", async () => {
+  const scheduler = createManualScheduler();
+  const translation = deferred();
+  const applied = [];
+  const state = createTranslationState({
+    sourceDelayMs: 300,
+    setTimeout: scheduler.setTimeout,
+    clearTimeout: scheduler.clearTimeout,
+    translate() {
+      return translation.promise;
+    }
+  });
+
+  assert.deepEqual(
+    state.updateCaption("hello", {
+      onTranslation(result, captionText) {
+        applied.push({ translation: result, captionText });
+      }
+    }),
+    {
+      visible: true,
+      sourceText: "",
+      targetText: "",
+      targetVisible: false,
+      targetStale: false,
+      requestStarted: true
+    }
+  );
+
+  translation.resolve("hello translated");
+  await translation.promise;
+  await flushPromiseHandlers();
+
+  assert.equal(scheduler.timers[0].cleared, true);
+  assert.deepEqual(applied, [
+    { translation: "hello translated", captionText: "hello" }
+  ]);
+  assert.deepEqual(state.updateCaption("hello"), {
+    visible: true,
+    sourceText: "hello",
+    targetText: "hello translated",
+    targetVisible: true,
+    targetStale: false,
+    requestStarted: false
+  });
+});
+
+test("keeps previous translated pair visible during source delay", async () => {
+  const scheduler = createManualScheduler();
+  const firstTranslation = deferred();
+  const secondTranslation = deferred();
+  const translations = {
+    first: firstTranslation,
+    second: secondTranslation
+  };
+  const state = createTranslationState({
+    sourceDelayMs: 300,
+    setTimeout: scheduler.setTimeout,
+    clearTimeout: scheduler.clearTimeout,
+    translate(text) {
+      return translations[text].promise;
+    }
+  });
+
+  state.updateCaption("first");
+  firstTranslation.resolve("first translated");
+  await firstTranslation.promise;
+  await flushPromiseHandlers();
+
+  assert.deepEqual(state.updateCaption("first"), {
+    visible: true,
+    sourceText: "first",
+    targetText: "first translated",
+    targetVisible: true,
+    targetStale: false,
+    requestStarted: false
+  });
+
+  assert.deepEqual(state.updateCaption("second"), {
+    visible: true,
+    sourceText: "first",
+    targetText: "first translated",
+    targetVisible: true,
+    targetStale: false,
+    requestStarted: true
+  });
+
+  scheduler.runPending();
+
+  assert.deepEqual(state.updateCaption("second"), {
+    visible: true,
+    sourceText: "second",
+    targetText: "first translated",
+    targetVisible: true,
+    targetStale: true,
+    requestStarted: false
+  });
+});
+
 test("debounces rapid partial caption changes before translating the latest caption", async () => {
   const scheduler = createManualScheduler();
   const translatedTexts = [];

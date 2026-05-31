@@ -27,10 +27,12 @@
   const subtitleLineHeightPx = 30;
   const subtitleLineGapPx = 4;
   const defaultTranslationDelayMs = 200;
+  const defaultSourceCaptionDelayMs = 300;
   const hiddenControlsBottomOffsetPx = 16;
 
   const translationState = YtDualSubtitlesTranslationState.createTranslationState({
     debounceMs: defaultTranslationDelayMs,
+    sourceDelayMs: defaultSourceCaptionDelayMs,
     translate: translateWithGoogle
   });
 
@@ -402,22 +404,35 @@
     const captionText = getCurrentOrRecentCaptionText();
 
     const captionState = translationState.updateCaption(captionText, {
-      onTranslation(translation) {
-        const targetLine = document.getElementById(targetLineId);
+      onSourceDelayElapsed() {
+        scheduleUpdate();
+      },
+      onTranslation(translation, translatedCaptionText) {
+        const overlay = createOverlay();
+        positionOverlay(overlay);
 
-        if (!targetLine) {
-          return;
+        const sourceLine = overlay.querySelector(`#${sourceLineId}`);
+        const targetLine = overlay.querySelector(`#${targetLineId}`);
+
+        if (!sourceLine || !targetLine) {
+          throw new Error("Subtitle overlay was not created correctly.");
         }
 
+        setText(sourceLine, translatedCaptionText);
+        setInvisible(sourceLine, false);
         setInvisible(targetLine, false);
         setTargetLineStale(targetLine, false);
         setText(targetLine, translation);
       },
-      onError(error) {
-        const targetLine = document.getElementById(targetLineId);
+      onError(error, failedCaptionText) {
+        const overlay = createOverlay();
+        positionOverlay(overlay);
 
-        if (!targetLine) {
-          return;
+        const sourceLine = overlay.querySelector(`#${sourceLineId}`);
+        const targetLine = overlay.querySelector(`#${targetLineId}`);
+
+        if (!sourceLine || !targetLine) {
+          throw new Error("Subtitle overlay was not created correctly.");
         }
 
         if (isExtensionContextInvalidatedError(error)) {
@@ -426,6 +441,8 @@
         }
 
         console.error("YouTube Dual Subtitles translation failed", error);
+        setText(sourceLine, failedCaptionText);
+        setInvisible(sourceLine, false);
         setInvisible(targetLine, false);
         setTargetLineStale(targetLine, false);
         setText(targetLine, formatTranslationErrorForOverlay(error));
@@ -434,6 +451,11 @@
 
     if (!captionState.visible) {
       resetCaptionState();
+      hideOverlay();
+      return;
+    }
+
+    if (!captionState.sourceText && !captionState.targetVisible) {
       hideOverlay();
       return;
     }
@@ -449,6 +471,7 @@
     }
 
     setText(sourceLine, captionState.sourceText);
+    setInvisible(sourceLine, !captionState.sourceText);
     setText(targetLine, captionState.targetText);
     setInvisible(targetLine, !captionState.targetVisible);
     setTargetLineStale(targetLine, Boolean(captionState.targetStale));

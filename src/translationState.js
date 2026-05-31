@@ -15,6 +15,7 @@
     }
 
     let debounceMs = normalizeDebounceMs(options && options.debounceMs);
+    let sourceDelayMs = normalizeDebounceMs(options && options.sourceDelayMs);
     const scheduleTimeout =
       (options && options.setTimeout) || ((callback, delay) => root.setTimeout(callback, delay));
     const clearScheduledTimeout =
@@ -25,11 +26,15 @@
     let isEnabled = !options || options.enabled !== false;
     let activeCaptionText = "";
     let requestedCaptionText = "";
+    let displayedCaptionText = "";
     let lastTranslatedText = "";
     let lastTranslatedCaptionText = "";
     let activeTranslationRequestId = 0;
     let translationCacheGeneration = 0;
     let debounceTimer = null;
+    let sourceDelayTimer = null;
+    let sourceDelayCaptionText = "";
+    let sourceDelayHandlers = null;
 
     function clearDebounceTimer() {
       if (!debounceTimer) {
@@ -40,10 +45,25 @@
       debounceTimer = null;
     }
 
+    function clearSourceDelayTimer() {
+      if (!sourceDelayTimer) {
+        sourceDelayCaptionText = "";
+        sourceDelayHandlers = null;
+        return;
+      }
+
+      clearScheduledTimeout(sourceDelayTimer);
+      sourceDelayTimer = null;
+      sourceDelayCaptionText = "";
+      sourceDelayHandlers = null;
+    }
+
     function resetCaptionState() {
       clearDebounceTimer();
+      clearSourceDelayTimer();
       activeCaptionText = "";
       requestedCaptionText = "";
+      displayedCaptionText = "";
       lastTranslatedText = "";
       lastTranslatedCaptionText = "";
       activeTranslationRequestId += 1;
@@ -51,6 +71,7 @@
 
     function clearTranslations() {
       clearDebounceTimer();
+      clearSourceDelayTimer();
       translationCacheGeneration += 1;
       translationCache.clear();
       pendingTranslations.clear();
@@ -58,6 +79,11 @@
       lastTranslatedText = "";
       lastTranslatedCaptionText = "";
       activeTranslationRequestId += 1;
+    }
+
+    function revealSourceCaption(normalizedCaptionText) {
+      clearSourceDelayTimer();
+      displayedCaptionText = normalizedCaptionText;
     }
 
     function getTranslation(text) {
@@ -121,6 +147,7 @@
 
           lastTranslatedText = translation;
           lastTranslatedCaptionText = normalizedCaptionText;
+          revealSourceCaption(normalizedCaptionText);
 
           if (handlers && typeof handlers.onTranslation === "function") {
             handlers.onTranslation(translation, normalizedCaptionText);
@@ -135,10 +162,55 @@
             return;
           }
 
+          revealSourceCaption(normalizedCaptionText);
+
           if (handlers && typeof handlers.onError === "function") {
             handlers.onError(error, normalizedCaptionText);
           }
         });
+    }
+
+    function scheduleSourceReveal(normalizedCaptionText, requestId, handlers) {
+      if (displayedCaptionText === normalizedCaptionText) {
+        return;
+      }
+
+      if (!sourceDelayMs) {
+        displayedCaptionText = normalizedCaptionText;
+        return;
+      }
+
+      sourceDelayHandlers = handlers;
+
+      if (sourceDelayTimer && sourceDelayCaptionText === normalizedCaptionText) {
+        return;
+      }
+
+      clearSourceDelayTimer();
+      sourceDelayCaptionText = normalizedCaptionText;
+      sourceDelayHandlers = handlers;
+      sourceDelayTimer = scheduleTimeout(() => {
+        const captionTextToReveal = sourceDelayCaptionText;
+        const handlersToNotify = sourceDelayHandlers;
+
+        sourceDelayTimer = null;
+        sourceDelayCaptionText = "";
+        sourceDelayHandlers = null;
+
+        if (
+          !isEnabled ||
+          requestId !== activeTranslationRequestId ||
+          captionTextToReveal !== activeCaptionText
+        ) {
+          return;
+        }
+
+        displayedCaptionText = captionTextToReveal;
+
+        if (handlersToNotify && typeof handlersToNotify.onSourceDelayElapsed === "function") {
+          handlersToNotify.onSourceDelayElapsed(captionTextToReveal);
+        }
+      }, sourceDelayMs);
     }
 
     function scheduleTranslation(normalizedCaptionText, requestId, handlers) {
@@ -184,12 +256,14 @@
 
       if (normalizedCaptionText !== activeCaptionText) {
         clearDebounceTimer();
+        clearSourceDelayTimer();
         activeCaptionText = normalizedCaptionText;
         requestedCaptionText = "";
         activeTranslationRequestId += 1;
       }
 
       if (translationCache.has(normalizedCaptionText)) {
+        revealSourceCaption(normalizedCaptionText);
         lastTranslatedText = translationCache.get(normalizedCaptionText);
         lastTranslatedCaptionText = normalizedCaptionText;
 
@@ -213,13 +287,24 @@
         scheduleTranslation(normalizedCaptionText, requestId, handlers);
       }
 
+      scheduleSourceReveal(normalizedCaptionText, activeTranslationRequestId, handlers);
+
+      const targetText =
+        displayedCaptionText === normalizedCaptionText
+          ? lastTranslatedText
+          : displayedCaptionText === lastTranslatedCaptionText
+            ? lastTranslatedText
+            : "";
+
       return {
         visible: true,
-        sourceText: normalizedCaptionText,
-        targetText: lastTranslatedText,
-        targetVisible: Boolean(lastTranslatedText),
+        sourceText: displayedCaptionText,
+        targetText,
+        targetVisible: Boolean(targetText),
         targetStale: Boolean(
-          lastTranslatedText && lastTranslatedCaptionText !== normalizedCaptionText
+          targetText &&
+            displayedCaptionText === normalizedCaptionText &&
+            lastTranslatedCaptionText !== normalizedCaptionText
         ),
         requestStarted
       };
