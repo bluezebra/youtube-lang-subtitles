@@ -85,6 +85,20 @@
     }
   }
 
+  function hasRenderedSubtitleText(overlay) {
+    if (!overlay) {
+      return false;
+    }
+
+    const sourceLine = overlay.querySelector(`#${sourceLineId}`);
+    const targetLine = overlay.querySelector(`#${targetLineId}`);
+
+    return Boolean(
+      normalizeCaptionText(sourceLine && sourceLine.textContent) ||
+        normalizeCaptionText(targetLine && targetLine.textContent)
+    );
+  }
+
   function renderRefreshRequiredOverlay() {
     const overlay = createOverlay();
     positionOverlay(overlay);
@@ -456,6 +470,14 @@
     }
 
     if (!captionState.sourceText && !captionState.targetVisible) {
+      const existingOverlay = document.getElementById(overlayId);
+
+      if (hasRenderedSubtitleText(existingOverlay)) {
+        existingOverlay.style.display = "grid";
+        positionOverlay(existingOverlay);
+        return;
+      }
+
       hideOverlay();
       return;
     }

@@ -395,6 +395,52 @@ test("keeps previous translated pair visible during source delay", async () => {
   });
 });
 
+test("keeps stale translation visible when revealed source changes again before translating", async () => {
+  const scheduler = createManualScheduler();
+  const firstTranslation = deferred();
+  const secondTranslation = deferred();
+  const thirdTranslation = deferred();
+  const translations = {
+    first: firstTranslation,
+    second: secondTranslation,
+    third: thirdTranslation
+  };
+  const state = createTranslationState({
+    sourceDelayMs: 300,
+    setTimeout: scheduler.setTimeout,
+    clearTimeout: scheduler.clearTimeout,
+    translate(text) {
+      return translations[text].promise;
+    }
+  });
+
+  state.updateCaption("first");
+  firstTranslation.resolve("first translated");
+  await firstTranslation.promise;
+  await flushPromiseHandlers();
+
+  state.updateCaption("second");
+  scheduler.runPending();
+
+  assert.deepEqual(state.updateCaption("second"), {
+    visible: true,
+    sourceText: "second",
+    targetText: "first translated",
+    targetVisible: true,
+    targetStale: true,
+    requestStarted: false
+  });
+
+  assert.deepEqual(state.updateCaption("third"), {
+    visible: true,
+    sourceText: "second",
+    targetText: "first translated",
+    targetVisible: true,
+    targetStale: true,
+    requestStarted: true
+  });
+});
+
 test("debounces rapid partial caption changes before translating the latest caption", async () => {
   const scheduler = createManualScheduler();
   const translatedTexts = [];

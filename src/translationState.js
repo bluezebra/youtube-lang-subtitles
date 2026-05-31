@@ -289,12 +289,7 @@
 
       scheduleSourceReveal(normalizedCaptionText, activeTranslationRequestId, handlers);
 
-      const targetText =
-        displayedCaptionText === normalizedCaptionText
-          ? lastTranslatedText
-          : displayedCaptionText === lastTranslatedCaptionText
-            ? lastTranslatedText
-            : "";
+      const targetText = displayedCaptionText ? lastTranslatedText : "";
 
       return {
         visible: true,
@@ -302,9 +297,7 @@
         targetText,
         targetVisible: Boolean(targetText),
         targetStale: Boolean(
-          targetText &&
-            displayedCaptionText === normalizedCaptionText &&
-            lastTranslatedCaptionText !== normalizedCaptionText
+          targetText && displayedCaptionText !== lastTranslatedCaptionText
         ),
         requestStarted
       };
