@@ -26,6 +26,7 @@
     let activeCaptionText = "";
     let requestedCaptionText = "";
     let lastTranslatedText = "";
+    let lastTranslatedCaptionText = "";
     let activeTranslationRequestId = 0;
     let translationCacheGeneration = 0;
     let debounceTimer = null;
@@ -44,6 +45,7 @@
       activeCaptionText = "";
       requestedCaptionText = "";
       lastTranslatedText = "";
+      lastTranslatedCaptionText = "";
       activeTranslationRequestId += 1;
     }
 
@@ -54,6 +56,7 @@
       pendingTranslations.clear();
       requestedCaptionText = "";
       lastTranslatedText = "";
+      lastTranslatedCaptionText = "";
       activeTranslationRequestId += 1;
     }
 
@@ -117,6 +120,7 @@
           }
 
           lastTranslatedText = translation;
+          lastTranslatedCaptionText = normalizedCaptionText;
 
           if (handlers && typeof handlers.onTranslation === "function") {
             handlers.onTranslation(translation, normalizedCaptionText);
@@ -187,12 +191,14 @@
 
       if (translationCache.has(normalizedCaptionText)) {
         lastTranslatedText = translationCache.get(normalizedCaptionText);
+        lastTranslatedCaptionText = normalizedCaptionText;
 
         return {
           visible: true,
           sourceText: normalizedCaptionText,
           targetText: lastTranslatedText,
           targetVisible: true,
+          targetStale: false,
           requestStarted: false
         };
       }
@@ -212,6 +218,9 @@
         sourceText: normalizedCaptionText,
         targetText: lastTranslatedText,
         targetVisible: Boolean(lastTranslatedText),
+        targetStale: Boolean(
+          lastTranslatedText && lastTranslatedCaptionText !== normalizedCaptionText
+        ),
         requestStarted
       };
     }

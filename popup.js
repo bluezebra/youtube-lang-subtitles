@@ -5,7 +5,6 @@ const overlayPositionStorageKey = "ytDualSubtitles.overlayPosition";
 const {
   defaultSourceLanguage,
   defaultTargetLanguage,
-  languageNames,
   normalizeSourceLanguage,
   normalizeTargetLanguage,
   sourceLanguageOptions,
@@ -14,7 +13,6 @@ const {
 const {
   defaultOverlayPosition,
   normalizeOverlayPosition,
-  overlayPositionLabels,
   overlayPositionOptions
 } = YtDualSubtitlesOverlaySettings;
 
@@ -121,7 +119,7 @@ sourceLanguageSelect.addEventListener("change", () => {
     }
 
     setSourceLanguageSelectEnabled(sourceLanguage);
-    setStatus(`Source language set to ${languageNames[sourceLanguage]}.`);
+    clearStatus();
   });
 });
 
@@ -139,7 +137,7 @@ targetLanguageSelect.addEventListener("change", () => {
     }
 
     setTargetLanguageSelectEnabled(targetLanguage);
-    setStatus(`Target language set to ${languageNames[targetLanguage]}.`);
+    clearStatus();
   });
 });
 
@@ -157,6 +155,6 @@ overlayPositionSelect.addEventListener("change", () => {
     }
 
     setOverlayPositionSelectEnabled(overlayPosition);
-    setStatus(`Position set to ${overlayPositionLabels[overlayPosition]}.`);
+    clearStatus();
   });
 });

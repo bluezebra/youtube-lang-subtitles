@@ -55,6 +55,14 @@
     }
   }
 
+  function setTargetLineStale(element, stale) {
+    const opacity = stale ? "0.72" : "1";
+
+    if (element.style.opacity !== opacity) {
+      element.style.opacity = opacity;
+    }
+  }
+
   function resetCaptionState() {
     lastCaptionText = "";
     lastCaptionSeenAt = 0;
@@ -326,6 +334,7 @@
         }
 
         setInvisible(targetLine, false);
+        setTargetLineStale(targetLine, false);
         setText(targetLine, translation);
       },
       onError(error) {
@@ -338,6 +347,7 @@
         const message = error instanceof Error ? error.message : String(error);
         console.error("YouTube Dual Subtitles translation failed", error);
         setInvisible(targetLine, false);
+        setTargetLineStale(targetLine, false);
         setText(targetLine, `Translation failed (${message})`);
       }
     });
@@ -361,6 +371,7 @@
     setText(sourceLine, captionState.sourceText);
     setText(targetLine, captionState.targetText);
     setInvisible(targetLine, !captionState.targetVisible);
+    setTargetLineStale(targetLine, Boolean(captionState.targetStale));
   }
 
   function scheduleUpdate() {

@@ -215,6 +215,7 @@ test("keeps previous translation visible while a new caption is translating", as
       sourceText: "first",
       targetText: "",
       targetVisible: false,
+      targetStale: false,
       requestStarted: true
     }
   );
@@ -237,6 +238,7 @@ test("keeps previous translation visible while a new caption is translating", as
       sourceText: "second",
       targetText: "first translated",
       targetVisible: true,
+      targetStale: true,
       requestStarted: true
     }
   );
@@ -276,6 +278,7 @@ test("debounces rapid partial caption changes before translating the latest capt
       sourceText: "hel",
       targetText: "",
       targetVisible: false,
+      targetStale: false,
       requestStarted: true
     }
   );
@@ -293,6 +296,7 @@ test("debounces rapid partial caption changes before translating the latest capt
       sourceText: "hello",
       targetText: "",
       targetVisible: false,
+      targetStale: false,
       requestStarted: true
     }
   );
