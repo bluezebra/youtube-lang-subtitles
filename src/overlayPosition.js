@@ -22,7 +22,7 @@
       return viewport.height - playerRect.top - playerRect.height / 2 - settings.overlayHeight / 2;
     }
 
-    return viewport.height - playerRect.bottom + edgeOffset;
+    return viewport.height - playerRect.bottom + (Number.isFinite(settings.bottomOffset) ? settings.bottomOffset : edgeOffset);
   }
 
   function calculateOverlayPosition(playerRect, viewport, options) {
@@ -34,7 +34,8 @@
       maxWidth: optionsWithDefaults.maxWidth || 900,
       overlayHeight: optionsWithDefaults.overlayHeight || 86,
       verticalMargin: optionsWithDefaults.verticalMargin || 16,
-      verticalPosition: optionsWithDefaults.verticalPosition || "bottom"
+      verticalPosition: optionsWithDefaults.verticalPosition || "bottom",
+      bottomOffset: optionsWithDefaults.bottomOffset
     };
 
     if (

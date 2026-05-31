@@ -44,6 +44,20 @@ test("positions the overlay in the middle of the YouTube player", () => {
   });
 });
 
+test("uses a custom bottom offset for hidden player controls", () => {
+  const position = calculateOverlayPosition(
+    { left: 100, right: 1100, top: 100, bottom: 700, width: 1000, height: 600 },
+    { width: 1200, height: 800 },
+    { bottomOffset: 16, overlayHeight: 86, verticalPosition: "bottom" }
+  );
+
+  assert.deepEqual(position, {
+    left: 600,
+    bottom: 116,
+    width: 900
+  });
+});
+
 test("uses player width when the player is narrower than the maximum overlay width", () => {
   const position = calculateOverlayPosition(
     { left: 50, right: 550, top: 100, bottom: 450, width: 500, height: 350 },

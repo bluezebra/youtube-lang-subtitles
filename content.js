@@ -23,6 +23,7 @@
   const subtitleLineHeightPx = 30;
   const subtitleLineGapPx = 4;
   const defaultTranslationDelayMs = 200;
+  const hiddenControlsBottomOffsetPx = 16;
 
   const translationState = YtDualSubtitlesTranslationState.createTranslationState({
     debounceMs: defaultTranslationDelayMs,
@@ -113,9 +114,7 @@
     );
   }
 
-  function getPlayerRect() {
-    const playerElement = findPlayerElement();
-
+  function getPlayerRect(playerElement) {
     if (!playerElement) {
       return null;
     }
@@ -132,6 +131,42 @@
     };
   }
 
+  function arePlayerControlsVisible(playerElement) {
+    if (!playerElement) {
+      return true;
+    }
+
+    if (
+      playerElement.classList.contains("ytp-autohide") ||
+      playerElement.classList.contains("ytp-hide-controls")
+    ) {
+      return false;
+    }
+
+    const controls = playerElement.querySelector(".ytp-chrome-bottom");
+
+    if (!controls) {
+      return true;
+    }
+
+    const style = window.getComputedStyle(controls);
+
+    if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) {
+      return false;
+    }
+
+    const rect = controls.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  }
+
+  function getBottomOffset(playerElement) {
+    if (overlayVerticalPosition !== "bottom" || arePlayerControlsVisible(playerElement)) {
+      return undefined;
+    }
+
+    return hiddenControlsBottomOffsetPx;
+  }
+
   function getViewportSize() {
     return {
       width: window.innerWidth || document.documentElement.clientWidth,
@@ -140,10 +175,12 @@
   }
 
   function positionOverlay(overlay) {
+    const playerElement = findPlayerElement();
     const position = YtDualSubtitlesOverlayPosition.calculateOverlayPosition(
-      getPlayerRect(),
+      getPlayerRect(playerElement),
       getViewportSize(),
       {
+        bottomOffset: getBottomOffset(playerElement),
         overlayHeight: overlayHeightPx,
         verticalPosition: overlayVerticalPosition
       }
@@ -209,6 +246,7 @@
       boxShadow: "0 4px 18px rgba(0, 0, 0, 0.45)",
       fontFamily: "Arial, sans-serif",
       pointerEvents: "none",
+      transition: "bottom 120ms ease-out",
       textAlign: "left"
     });
 
@@ -517,7 +555,9 @@
     observer.observe(document.body || document.documentElement, {
       childList: true,
       subtree: true,
-      characterData: true
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["class", "style"]
     });
 
     document.addEventListener("yt-navigate-finish", scheduleUpdate);
