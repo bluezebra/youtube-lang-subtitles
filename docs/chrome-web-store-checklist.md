@@ -42,8 +42,8 @@ Detailed description:
 > Features:
 >
 > - Dual subtitle overlay for YouTube videos with captions.
-> - Searchable source language selector, including Auto-detect.
-> - Searchable target language selector.
+> - Searchable source language selector using the Google Translate language list, including Auto-detect.
+> - Searchable target language selector using the Google Translate language list.
 > - Overlay position selector: Bottom, Middle, or Top.
 > - Toggle to enable or disable the extension.
 > - In-memory translation caching while the page is open.
