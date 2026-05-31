@@ -49,6 +49,8 @@ Detailed description:
 > - In-memory translation caching while the page is open.
 >
 > The extension does not use analytics, ads, accounts, or developer-controlled servers. Caption text is sent to Google Translate only to provide the subtitle translation.
+>
+> Optional support: If this extension is useful, you can support development at https://buymeacoffee.com/bluezebrafish.
 
 Suggested category:
 
@@ -99,13 +101,11 @@ Recommended first submission:
 
 ## Tip/support link
 
-Create a support page first, for example:
+Use the same support link as the popup and README:
 
-- Buy Me a Coffee
-- Ko-fi
-- GitHub Sponsors
+- Buy Me a Coffee: `https://buymeacoffee.com/bluezebrafish`
 
-After you have the URL, add it to the README or store support/homepage links. Keep it clearly separate from core functionality:
+Use this as the store support/homepage link if the dashboard asks for one. Keep it clearly separate from core functionality:
 
 - Do not gate subtitle translation behind payment.
 - Do not collect or monetize caption data.
