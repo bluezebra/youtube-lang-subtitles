@@ -27,8 +27,8 @@
   const subtitleLineHeightPx = 30;
   const subtitleLineGapPx = 4;
   const maxSubtitleLineCount = 2;
-  const defaultTranslationDelayMs = 200;
-  const defaultSourceCaptionDelayMs = 300;
+  const defaultTranslationDelayMs = 100;
+  const defaultSourceCaptionDelayMs = 200;
   const hiddenControlsBottomOffsetPx = 16;
 
   const translationState = YtDualSubtitlesTranslationState.createTranslationState({
