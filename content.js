@@ -23,9 +23,10 @@
     isExtensionContextInvalidatedError
   } = YtDualSubtitlesTranslationErrors;
   const staleCaptionDelayMs = 1500;
-  const overlayHeightPx = 86;
+  const minimumOverlayHeightPx = 86;
   const subtitleLineHeightPx = 30;
   const subtitleLineGapPx = 4;
+  const maxSubtitleLineCount = 2;
   const defaultTranslationDelayMs = 200;
   const defaultSourceCaptionDelayMs = 300;
   const hiddenControlsBottomOffsetPx = 16;
@@ -101,8 +102,6 @@
 
   function renderRefreshRequiredOverlay() {
     const overlay = createOverlay();
-    positionOverlay(overlay);
-
     const sourceLine = overlay.querySelector(`#${sourceLineId}`);
     const targetLine = overlay.querySelector(`#${targetLineId}`);
 
@@ -114,6 +113,7 @@
     setText(targetLine, formatTranslationErrorForOverlay(new Error("Extension context invalidated.")));
     setInvisible(targetLine, false);
     setTargetLineStale(targetLine, false);
+    positionOverlay(overlay);
   }
 
   function pauseTranslationsUntilRefresh(error) {
@@ -225,24 +225,41 @@
 
   function positionOverlay(overlay) {
     const playerElement = findPlayerElement();
-    const position = YtDualSubtitlesOverlayPosition.calculateOverlayPosition(
+    const options = {
+      bottomOffset: getBottomOffset(playerElement),
+      maxWidth: Number.POSITIVE_INFINITY,
+      overlayHeight: minimumOverlayHeightPx,
+      verticalPosition: overlayVerticalPosition
+    };
+    const preliminaryPosition = YtDualSubtitlesOverlayPosition.calculateOverlayPosition(
       getPlayerRect(playerElement),
       getViewportSize(),
-      {
-        bottomOffset: getBottomOffset(playerElement),
-        overlayHeight: overlayHeightPx,
-        verticalPosition: overlayVerticalPosition
-      }
+      options
     );
 
-    if (!position) {
+    if (!preliminaryPosition) {
       Object.assign(overlay.style, {
         left: "50%",
         bottom: "12%",
-        width: "min(900px, calc(100vw - 32px))"
+        width: "calc(100vw - 32px)"
       });
       return;
     }
+
+    Object.assign(overlay.style, {
+      left: `${preliminaryPosition.left}px`,
+      width: `${preliminaryPosition.width}px`
+    });
+
+    const measuredPosition = YtDualSubtitlesOverlayPosition.calculateOverlayPosition(
+      getPlayerRect(playerElement),
+      getViewportSize(),
+      {
+        ...options,
+        overlayHeight: Math.max(minimumOverlayHeightPx, overlay.offsetHeight || minimumOverlayHeightPx)
+      }
+    );
+    const position = measuredPosition || preliminaryPosition;
 
     Object.assign(overlay.style, {
       left: `${position.left}px`,
@@ -280,14 +297,14 @@
       transform: "translateX(-50%)",
       zIndex: "2147483647",
       display: "grid",
-      gridTemplateRows: `${subtitleLineHeightPx}px ${subtitleLineHeightPx}px`,
+      gridTemplateRows: "auto auto",
       alignContent: "center",
       alignItems: "start",
       justifyItems: "stretch",
       rowGap: `${subtitleLineGapPx}px`,
       boxSizing: "border-box",
-      height: `${overlayHeightPx}px`,
-      width: "min(900px, calc(100vw - 32px))",
+      minHeight: `${minimumOverlayHeightPx}px`,
+      width: "calc(100vw - 32px)",
       padding: "8px 18px",
       color: "rgba(255, 255, 255, 0.88)",
       background: "rgba(8, 8, 8, 0.68)",
@@ -305,8 +322,13 @@
       fontWeight: "700",
       lineHeight: `${subtitleLineHeightPx}px`,
       width: "100%",
-      height: `${subtitleLineHeightPx}px`,
+      maxHeight: `${subtitleLineHeightPx * maxSubtitleLineCount}px`,
       overflow: "hidden",
+      overflowWrap: "break-word",
+      whiteSpace: "normal",
+      display: "-webkit-box",
+      WebkitBoxOrient: "vertical",
+      WebkitLineClamp: String(maxSubtitleLineCount),
       textAlign: "left",
       textShadow: "0 2px 4px rgba(0, 0, 0, 0.8)"
     });
@@ -317,8 +339,13 @@
       fontWeight: "700",
       lineHeight: `${subtitleLineHeightPx}px`,
       width: "100%",
-      height: `${subtitleLineHeightPx}px`,
+      maxHeight: `${subtitleLineHeightPx * maxSubtitleLineCount}px`,
       overflow: "hidden",
+      overflowWrap: "break-word",
+      whiteSpace: "normal",
+      display: "-webkit-box",
+      WebkitBoxOrient: "vertical",
+      WebkitLineClamp: String(maxSubtitleLineCount),
       textAlign: "left",
       textShadow: "0 2px 4px rgba(0, 0, 0, 0.8)"
     });
@@ -423,7 +450,6 @@
       },
       onTranslation(translation, translatedCaptionText) {
         const overlay = createOverlay();
-        positionOverlay(overlay);
 
         const sourceLine = overlay.querySelector(`#${sourceLineId}`);
         const targetLine = overlay.querySelector(`#${targetLineId}`);
@@ -437,10 +463,10 @@
         setInvisible(targetLine, false);
         setTargetLineStale(targetLine, false);
         setText(targetLine, translation);
+        positionOverlay(overlay);
       },
       onError(error, failedCaptionText) {
         const overlay = createOverlay();
-        positionOverlay(overlay);
 
         const sourceLine = overlay.querySelector(`#${sourceLineId}`);
         const targetLine = overlay.querySelector(`#${targetLineId}`);
@@ -460,6 +486,7 @@
         setInvisible(targetLine, false);
         setTargetLineStale(targetLine, false);
         setText(targetLine, formatTranslationErrorForOverlay(error));
+        positionOverlay(overlay);
       }
     });
 
@@ -481,9 +508,7 @@
       hideOverlay();
       return;
     }
-
     const overlay = createOverlay();
-    positionOverlay(overlay);
 
     const sourceLine = overlay.querySelector(`#${sourceLineId}`);
     const targetLine = overlay.querySelector(`#${targetLineId}`);
@@ -497,6 +522,7 @@
     setText(targetLine, captionState.targetText);
     setInvisible(targetLine, !captionState.targetVisible);
     setTargetLineStale(targetLine, Boolean(captionState.targetStale));
+    positionOverlay(overlay);
   }
 
   function scheduleUpdate() {

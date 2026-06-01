@@ -39,6 +39,9 @@ Detailed description:
 >
 > When YouTube captions are visible, the extension reads the current caption text and displays a clean overlay with the original caption on top and a Google Translate result underneath. You can choose the source language, target language, and where the overlay appears on the video.
 >
+> YouTube Dual Subtitles is free and open source:
+> https://github.com/bluezebra/youtube-lang-subtitles
+>
 > Features:
 >
 > - Dual subtitle overlay for YouTube videos with captions.

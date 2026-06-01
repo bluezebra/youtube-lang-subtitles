@@ -82,6 +82,17 @@ test("uses player width when the player is narrower than the maximum overlay wid
   assert.equal(position.left, 300);
 });
 
+test("can use the full player width when the maximum overlay width is uncapped", () => {
+  const position = calculateOverlayPosition(
+    { left: 100, right: 1300, top: 100, bottom: 700, width: 1200, height: 600 },
+    { width: 1400, height: 800 },
+    { maxWidth: Number.POSITIVE_INFINITY }
+  );
+
+  assert.equal(position.width, 1168);
+  assert.equal(position.left, 700);
+});
+
 test("clamps the overlay center when the player is partly outside the viewport", () => {
   const position = calculateOverlayPosition(
     { left: -200, right: 600, top: 0, bottom: 500, width: 800, height: 500 },
