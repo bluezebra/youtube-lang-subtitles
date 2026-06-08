@@ -1,6 +1,7 @@
 const translateMessageType = "ytDualSubtitles.translate";
 const googleTranslateEndpoint = "https://translate.googleapis.com/translate_a/single";
 const translateRequestTimeoutMs = 2500;
+const translateTimeoutErrorCode = "TRANSLATE_TIMEOUT";
 
 function parseGoogleTranslateResponse(data) {
   if (!Array.isArray(data) || !Array.isArray(data[0])) {
@@ -27,6 +28,35 @@ function requireNonEmptyString(value, fieldName) {
   return value.trim();
 }
 
+function createTranslateTimeoutError() {
+  const error = new Error("Google Translate request timed out.");
+  error.code = translateTimeoutErrorCode;
+  return error;
+}
+
+function isTranslateTimeoutError(error) {
+  return Boolean(error && error.code === translateTimeoutErrorCode);
+}
+
+async function fetchTranslationResponse(url) {
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => {
+    abortController.abort();
+  }, translateRequestTimeoutMs);
+
+  try {
+    return await fetch(url.toString(), { signal: abortController.signal });
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      throw createTranslateTimeoutError();
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function translateText(text, sourceLanguage, targetLanguage) {
   const normalizedText = requireNonEmptyString(text, "text");
   const normalizedSourceLanguage = requireNonEmptyString(sourceLanguage, "sourceLanguage");
@@ -39,22 +69,16 @@ async function translateText(text, sourceLanguage, targetLanguage) {
   url.searchParams.set("dt", "t");
   url.searchParams.set("q", normalizedText);
 
-  const abortController = new AbortController();
-  const timeoutId = setTimeout(() => {
-    abortController.abort();
-  }, translateRequestTimeoutMs);
   let response;
 
   try {
-    response = await fetch(url.toString(), { signal: abortController.signal });
+    response = await fetchTranslationResponse(url);
   } catch (error) {
-    if (error && error.name === "AbortError") {
-      throw new Error("Google Translate request timed out.");
+    if (isTranslateTimeoutError(error)) {
+      response = await fetchTranslationResponse(url);
+    } else {
+      throw error;
     }
-
-    throw error;
-  } finally {
-    clearTimeout(timeoutId);
   }
 
   if (!response.ok) {
