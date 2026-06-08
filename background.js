@@ -1,5 +1,6 @@
 const translateMessageType = "ytDualSubtitles.translate";
 const googleTranslateEndpoint = "https://translate.googleapis.com/translate_a/single";
+const translateRequestTimeoutMs = 2500;
 
 function parseGoogleTranslateResponse(data) {
   if (!Array.isArray(data) || !Array.isArray(data[0])) {
@@ -38,7 +39,23 @@ async function translateText(text, sourceLanguage, targetLanguage) {
   url.searchParams.set("dt", "t");
   url.searchParams.set("q", normalizedText);
 
-  const response = await fetch(url.toString());
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => {
+    abortController.abort();
+  }, translateRequestTimeoutMs);
+  let response;
+
+  try {
+    response = await fetch(url.toString(), { signal: abortController.signal });
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      throw new Error("Google Translate request timed out.");
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     throw new Error(`Google Translate request failed: ${response.status} ${response.statusText}`);
