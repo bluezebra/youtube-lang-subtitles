@@ -40,7 +40,8 @@
         "src/translationState.js",
         "src/overlayPosition.js",
         "src/translationErrors.js",
-        "content.js"
+      "src/summarizer.js",
+      "content.js"
       ],
       "run_at": "document_idle"
     }

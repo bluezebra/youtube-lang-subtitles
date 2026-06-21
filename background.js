@@ -95,18 +95,38 @@ async function translateText(text, sourceLanguage, targetLanguage) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (!message || message.type !== translateMessageType) {
+  if (!message || !message.type) {
     return false;
   }
 
-  translateText(message.text, message.sourceLanguage, message.targetLanguage)
-    .then((translation) => {
-      sendResponse({ ok: true, translation });
-    })
-    .catch((error) => {
+  if (message.type === translateMessageType) {
+    translateText(message.text, message.sourceLanguage, message.targetLanguage)
+      .then((translation) => {
+        sendResponse({ ok: true, translation });
+      })
+      .catch((error) => {
+        const messageText = error instanceof Error ? error.message : String(error);
+        sendResponse({ ok: false, error: messageText });
+      });
+
+    return true;
+  }
+
+  if (message.type === "ytDualSubtitles.summarize") {
+    // Basic summarization handler in background: expects message.history = [{targetText,...}, ...]
+    try {
+      const history = Array.isArray(message.history) ? message.history : [];
+      // Very small footprint summarizer: take last up to 5 targetText lines and return an extractive join.
+      const recent = history.slice(-5).map((h) => String(h.targetText || "").trim()).filter(Boolean);
+      const summary = recent.join(' ');
+      sendResponse({ ok: true, summary });
+    } catch (error) {
       const messageText = error instanceof Error ? error.message : String(error);
       sendResponse({ ok: false, error: messageText });
-    });
+    }
 
-  return true;
+    return true;
+  }
+
+  return false;
 });

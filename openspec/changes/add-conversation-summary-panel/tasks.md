@@ -1,18 +1,18 @@
 ## 1. Planning & scaffolding
 
-- [ ] 1.1 Create change directory and OpenSpec metadata (.openspec.yaml) for the new change.
-- [ ] 1.2 Add high-level proposal.md and design.md (this change) and tasks.md to the change folder.
+- [x] 1.1 Create change directory and OpenSpec metadata (.openspec.yaml) for the new change.
+- [x] 1.2 Add high-level proposal.md and design.md (this change) and tasks.md to the change folder.
 
 ## 2. Translation state & commit pipeline
 
-- [ ] 2.1 Extend `src/translationState.js` to emit committed translation events (reuse stabilization rules from sidebar feed). Add an API to subscribe to committed entries.
+- [x] 2.1 Extend `src/translationState.js` to emit committed translation events (reuse stabilization rules from sidebar feed). Add an API to subscribe to committed entries.
 - [ ] 2.2 Add in-memory rolling buffer for committed entries keyed by video id and bounded by `retentionCount` setting.
 - [ ] 2.3 Add simple hashing/fingerprint for buffer snapshot to support caching of generated summaries.
 
 ## 3. Summarizer provider & background plumbing
 
-- [ ] 3.1 Add `src/summarizer.js` (provider abstraction) and export for tests. Implement `local-extractive` summarizer here.
-- [ ] 3.2 Add background message handler in `background.js` to accept `ytDualSubtitles.summarize` messages and invoke the selected provider. Implement rate-limiting and caching. Respect `providerConsent` before forwarding text to external hosts.
+- [x] 3.1 Add `src/summarizer.js` (provider abstraction) and export for tests. Implement `local-extractive` summarizer here.
+- [x] 3.2 Add background message handler in `background.js` to accept `ytDualSubtitles.summarize` messages and invoke the selected provider. Implement rate-limiting and caching. Respect `providerConsent` before forwarding text to external hosts.
 - [ ] 3.3 (Optional provider) Add remote provider implementation wiring for `chatgpt-5-mini` behind opt-in. Document required host permissions and user consent flow. Do not enable by default.
 
 ## 4. UI panel & popup settings

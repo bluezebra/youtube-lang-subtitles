@@ -22,7 +22,8 @@
       (options && options.clearTimeout) || ((timer) => root.clearTimeout(timer));
     const translationCache = new Map();
     const pendingTranslations = new Map();
-
+    const committedHandlers = new Set();
+ 
     let isEnabled = !options || options.enabled !== false;
     let activeCaptionText = "";
     let requestedCaptionText = "";
@@ -35,6 +36,14 @@
     let sourceDelayTimer = null;
     let sourceDelayCaptionText = "";
     let sourceDelayHandlers = null;
+
+    function subscribeCommitted(handler) {
+      if (typeof handler !== "function") {
+        throw new Error("subscribeCommitted requires a function handler");
+      }
+      committedHandlers.add(handler);
+      return () => committedHandlers.delete(handler);
+    }
 
     function clearDebounceTimer() {
       if (!debounceTimer) {
@@ -151,6 +160,28 @@
 
           if (handlers && typeof handlers.onTranslation === "function") {
             handlers.onTranslation(translation, normalizedCaptionText);
+          }
+
+          // Notify committed handlers that a stable translation arrived.
+          try {
+            const committedEntry = {
+              ts: Date.now(),
+              sourceText: normalizedCaptionText,
+              targetText: translation
+            };
+
+            for (const h of committedHandlers) {
+              try {
+                h(committedEntry);
+              } catch (e) {
+                // Swallow handler errors to avoid breaking translation flow
+                /* eslint-disable no-console */
+                console.error("committed handler error", e);
+                /* eslint-enable no-console */
+              }
+            }
+          } catch (e) {
+            /* noop */
           }
         })
         .catch((error) => {
@@ -309,7 +340,8 @@
       normalizeCaptionText,
       setDebounceMs,
       setEnabled,
-      updateCaption
+      updateCaption,
+      subscribeCommitted
     };
   }
 
