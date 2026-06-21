@@ -28,6 +28,23 @@ The user suggested optionally leveraging a GitHub Marketplace "ChatGPT-5 mini" s
 - Tests: Add unit tests for summary generation, provider plumbing, and UI rendering logic.
 - UX: Keep unchanged default behavior (two-line overlay) and make the panel opt-in by default.
 
-## Recommendation
+## Recommendation and Current Status
 
 Start with a local extractive summarizer and the UI + settings plumbing. Make the external provider integration optional behind a clear setting and consent flow so users can try summarization without exposing captions to remote services.
+
+Progress so far (applied):
+
+- Implemented a lightweight local extractive summarizer: `src/summarizer.js` (provides a provider list and summarize(history, options)).
+- Extended `src/translationState.js` with a subscribeCommitted(handler) API which publishes committed translation entries when a stable translation arrives.
+- Added a small background message handler for `ytDualSubtitles.summarize` in `background.js` that returns a basic extractive summary when requested.
+- Registered `src/summarizer.js` in `manifest.json` so the module is available to content scripts.
+
+Next steps (recommended, prioritized):
+
+1. Implement the right-hand conversation summary panel UI (content.js or `src/summaryPanel.js`) to render committed entries and show generated summaries (read-only UI connected to the new events).
+2. Add an in-memory rolling buffer for committed entries with retentionCount and per-video scoping.
+3. Add popup settings and consent controls: enable panel, provider selection, interval, retentionCount, and explicit provider consent for remote summarizers.
+4. Wire background summarizer calls to respect providerConsent, caching, and rate-limiting and add the optional `chatgpt-5-mini` provider only after privacy review.
+5. Add unit tests for the local summarizer and translationState committed emission and integration tests for panel updates.
+
+Notes on privacy: remote summarization remains opt-in. The proposal and popup must clearly explain what text is sent and how often; provider credentials should only be stored after explicit user action.
