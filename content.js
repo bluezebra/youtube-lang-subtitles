@@ -29,11 +29,13 @@
   const maxSubtitleLineCount = 2;
   const defaultTranslationDelayMs = 100;
   const defaultSourceCaptionDelayMs = 200;
+  const defaultTranslationMaxWaitMs = 300;
   const hiddenControlsBottomOffsetPx = 16;
 
   const translationState = YtDualSubtitlesTranslationState.createTranslationState({
     debounceMs: defaultTranslationDelayMs,
     sourceDelayMs: defaultSourceCaptionDelayMs,
+    maxWaitMs: defaultTranslationMaxWaitMs,
     translate: translateWithGoogle
   });
 
@@ -446,6 +448,9 @@
 
     const captionState = translationState.updateCaption(captionText, {
       onSourceDelayElapsed() {
+        scheduleUpdate();
+      },
+      onStaleTranslation() {
         scheduleUpdate();
       },
       onTranslation(translation, translatedCaptionText) {

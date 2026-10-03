@@ -16,6 +16,7 @@
 
     let debounceMs = normalizeDebounceMs(options && options.debounceMs);
     let sourceDelayMs = normalizeDebounceMs(options && options.sourceDelayMs);
+    let maxWaitMs = normalizeDebounceMs(options && options.maxWaitMs);
     const scheduleTimeout =
       (options && options.setTimeout) || ((callback, delay) => root.setTimeout(callback, delay));
     const clearScheduledTimeout =
@@ -36,6 +37,8 @@
     let sourceDelayTimer = null;
     let sourceDelayCaptionText = "";
     let sourceDelayHandlers = null;
+    let maxWaitTimer = null;
+    let latestHandlers = null;
 
     function subscribeCommitted(handler) {
       if (typeof handler !== "function") {
@@ -54,6 +57,55 @@
       debounceTimer = null;
     }
 
+    function clearMaxWaitTimer() {
+      if (!maxWaitTimer) {
+        return;
+      }
+
+      clearScheduledTimeout(maxWaitTimer);
+      maxWaitTimer = null;
+    }
+
+    // While auto-generated captions keep growing, the debounce timer is reset on every
+    // change and no request would be sent. The max-wait timer forces a request for the
+    // latest caption so the translation never falls more than maxWaitMs behind.
+    function startMaxWaitTimer() {
+      if (!maxWaitMs || maxWaitTimer) {
+        return;
+      }
+
+      maxWaitTimer = scheduleTimeout(() => {
+        maxWaitTimer = null;
+
+        if (
+          !isEnabled ||
+          !activeCaptionText ||
+          translationCache.has(activeCaptionText) ||
+          (requestedCaptionText === activeCaptionText && !debounceTimer)
+        ) {
+          return;
+        }
+
+        clearDebounceTimer();
+        requestedCaptionText = activeCaptionText;
+        requestTranslation(activeCaptionText, activeTranslationRequestId, latestHandlers);
+      }, maxWaitMs);
+    }
+
+    // A translation for an earlier, word-boundary prefix of the current caption is
+    // still a useful (stale) preview while the full caption is being translated.
+    function isUsefulPrefixTranslation(normalizedCaptionText) {
+      if (!activeCaptionText.startsWith(`${normalizedCaptionText} `)) {
+        return false;
+      }
+
+      return (
+        !lastTranslatedCaptionText ||
+        !activeCaptionText.startsWith(lastTranslatedCaptionText) ||
+        normalizedCaptionText.length > lastTranslatedCaptionText.length
+      );
+    }
+
     function clearSourceDelayTimer() {
       if (!sourceDelayTimer) {
         sourceDelayCaptionText = "";
@@ -69,6 +121,7 @@
 
     function resetCaptionState() {
       clearDebounceTimer();
+      clearMaxWaitTimer();
       clearSourceDelayTimer();
       activeCaptionText = "";
       requestedCaptionText = "";
@@ -80,6 +133,7 @@
 
     function clearTranslations() {
       clearDebounceTimer();
+      clearMaxWaitTimer();
       clearSourceDelayTimer();
       translationCacheGeneration += 1;
       translationCache.clear();
@@ -143,7 +197,30 @@
       debounceMs = normalizeDebounceMs(value);
     }
 
+    function setMaxWaitMs(value) {
+      maxWaitMs = normalizeDebounceMs(value);
+
+      if (!maxWaitMs) {
+        clearMaxWaitTimer();
+      }
+    }
+
+    function applyPrefixTranslation(translation, normalizedCaptionText, handlers) {
+      lastTranslatedText = translation;
+      lastTranslatedCaptionText = normalizedCaptionText;
+
+      if (!displayedCaptionText) {
+        revealSourceCaption(activeCaptionText);
+      }
+
+      if (handlers && typeof handlers.onStaleTranslation === "function") {
+        handlers.onStaleTranslation(translation, normalizedCaptionText);
+      }
+    }
+
     function requestTranslation(normalizedCaptionText, requestId, handlers) {
+      const cacheGeneration = translationCacheGeneration;
+
       getTranslation(normalizedCaptionText)
         .then((translation) => {
           if (
@@ -151,6 +228,14 @@
             requestId !== activeTranslationRequestId ||
             normalizedCaptionText !== activeCaptionText
           ) {
+            if (
+              isEnabled &&
+              cacheGeneration === translationCacheGeneration &&
+              isUsefulPrefixTranslation(normalizedCaptionText)
+            ) {
+              applyPrefixTranslation(translation, normalizedCaptionText, handlers);
+            }
+
             return;
           }
 
@@ -254,6 +339,7 @@
 
       debounceTimer = scheduleTimeout(() => {
         debounceTimer = null;
+        clearMaxWaitTimer();
 
         if (
           !isEnabled ||
@@ -293,6 +379,8 @@
         activeTranslationRequestId += 1;
       }
 
+      latestHandlers = handlers;
+
       if (translationCache.has(normalizedCaptionText)) {
         revealSourceCaption(normalizedCaptionText);
         lastTranslatedText = translationCache.get(normalizedCaptionText);
@@ -316,6 +404,10 @@
         const requestId = activeTranslationRequestId;
 
         scheduleTranslation(normalizedCaptionText, requestId, handlers);
+
+        if (debounceTimer) {
+          startMaxWaitTimer();
+        }
       }
 
       scheduleSourceReveal(normalizedCaptionText, activeTranslationRequestId, handlers);
@@ -339,6 +431,7 @@
       getTranslation,
       normalizeCaptionText,
       setDebounceMs,
+      setMaxWaitMs,
       setEnabled,
       updateCaption,
       subscribeCommitted
