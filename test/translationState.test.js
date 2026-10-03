@@ -524,3 +524,161 @@ test("updates debounce delay for future caption requests", () => {
   assert.equal(scheduler.timers[1].delay, 350);
   assert.deepEqual(translatedTexts, []);
 });
+
+test("late translation of a word-boundary prefix is shown as a stale preview", async () => {
+  const translations = new Map();
+  const state = createTranslationState({
+    translate(text) {
+      const translation = deferred();
+      translations.set(text, translation);
+      return translation.promise;
+    }
+  });
+  const staleCalls = [];
+  const handlers = {
+    onStaleTranslation(translation, text) {
+      staleCalls.push({ translation, text });
+    },
+    onTranslation() {}
+  };
+
+  state.updateCaption("hola amigo", handlers);
+  state.updateCaption("hola amigo como estas", handlers);
+
+  translations.get("hola amigo").resolve("hello friend");
+  await flushPromiseHandlers();
+
+  assert.deepEqual(staleCalls, [{ translation: "hello friend", text: "hola amigo" }]);
+  assert.deepEqual(state.updateCaption("hola amigo como estas", handlers), {
+    visible: true,
+    sourceText: "hola amigo como estas",
+    targetText: "hello friend",
+    targetVisible: true,
+    targetStale: true,
+    requestStarted: false
+  });
+});
+
+test("late translation that is not a prefix of the active caption is ignored", async () => {
+  const translations = new Map();
+  const state = createTranslationState({
+    translate(text) {
+      const translation = deferred();
+      translations.set(text, translation);
+      return translation.promise;
+    }
+  });
+  let staleCalls = 0;
+  const handlers = {
+    onStaleTranslation() {
+      staleCalls += 1;
+    }
+  };
+
+  state.updateCaption("hola amigo", handlers);
+  state.updateCaption("adios amigo", handlers);
+
+  translations.get("hola amigo").resolve("hello friend");
+  await flushPromiseHandlers();
+
+  assert.equal(staleCalls, 0);
+  assert.equal(state.updateCaption("adios amigo", handlers).targetText, "");
+});
+
+test("max wait forces a translation while captions keep changing", async () => {
+  const scheduler = createManualScheduler();
+  const requested = [];
+  const state = createTranslationState({
+    debounceMs: 100,
+    maxWaitMs: 300,
+    setTimeout: scheduler.setTimeout,
+    clearTimeout: scheduler.clearTimeout,
+    translate(text) {
+      requested.push(text);
+      return `${text} translated`;
+    }
+  });
+
+  state.updateCaption("one", {});
+  state.updateCaption("one two", {});
+  state.updateCaption("one two three", {});
+
+  const maxWaitTimer = scheduler.timers.find((timer) => timer.delay === 300);
+  assert.ok(maxWaitTimer);
+  assert.equal(scheduler.timers.filter((timer) => timer.delay === 300).length, 1);
+
+  maxWaitTimer.callback();
+  await flushPromiseHandlers();
+
+  assert.deepEqual(requested, ["one two three"]);
+});
+
+test("setMaxWaitMs(0) disables the max wait timer", () => {
+  const scheduler = createManualScheduler();
+  const state = createTranslationState({
+    debounceMs: 100,
+    maxWaitMs: 300,
+    setTimeout: scheduler.setTimeout,
+    clearTimeout: scheduler.clearTimeout,
+    translate: (text) => text
+  });
+
+  state.setMaxWaitMs(0);
+  state.updateCaption("one", {});
+
+  assert.equal(scheduler.timers.some((timer) => timer.delay === 300), false);
+});
+
+test("sentenceChunking translates each sentence separately and joins results", async () => {
+  const requested = [];
+  const state = createTranslationState({
+    sentenceChunking: true,
+    translate(text) {
+      requested.push(text);
+      return `${text} translated`;
+    }
+  });
+
+  state.updateCaption("One. Two", {});
+  await flushPromiseHandlers();
+
+  assert.deepEqual(requested, ["One.", "Two"]);
+  assert.equal(state.updateCaption("One. Two", {}).targetText, "One. translated Two translated");
+});
+
+test("sentenceChunking reuses cached sentences when the caption grows", async () => {
+  const requested = [];
+  const state = createTranslationState({
+    sentenceChunking: true,
+    translate(text) {
+      requested.push(text);
+      return `${text} translated`;
+    }
+  });
+
+  state.updateCaption("One. Two", {});
+  await flushPromiseHandlers();
+  state.updateCaption("One. Two three", {});
+  await flushPromiseHandlers();
+
+  assert.deepEqual(requested, ["One.", "Two", "Two three"]);
+  assert.equal(
+    state.updateCaption("One. Two three", {}).targetText,
+    "One. translated Two three translated"
+  );
+});
+
+test("without sentenceChunking the whole caption is translated in one request", async () => {
+  const requested = [];
+  const state = createTranslationState({
+    translate(text) {
+      requested.push(text);
+      return `${text} translated`;
+    }
+  });
+
+  state.updateCaption("One. Two", {});
+  await flushPromiseHandlers();
+
+  assert.deepEqual(requested, ["One. Two"]);
+});
