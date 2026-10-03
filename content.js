@@ -36,6 +36,7 @@
     debounceMs: defaultTranslationDelayMs,
     sourceDelayMs: defaultSourceCaptionDelayMs,
     maxWaitMs: defaultTranslationMaxWaitMs,
+    sentenceChunking: true,
     translate: translateWithGoogle
   });
 

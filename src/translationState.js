@@ -7,6 +7,12 @@
     return Number.isFinite(value) && value > 0 ? value : 0;
   }
 
+  function splitIntoSentences(text) {
+    return normalizeCaptionText(text)
+      .split(/(?<=[.!?…])\s+/)
+      .filter(Boolean);
+  }
+
   function createTranslationState(options) {
     const translate = options && options.translate;
 
@@ -17,6 +23,7 @@
     let debounceMs = normalizeDebounceMs(options && options.debounceMs);
     let sourceDelayMs = normalizeDebounceMs(options && options.sourceDelayMs);
     let maxWaitMs = normalizeDebounceMs(options && options.maxWaitMs);
+    const sentenceChunking = Boolean(options && options.sentenceChunking);
     const scheduleTimeout =
       (options && options.setTimeout) || ((callback, delay) => root.setTimeout(callback, delay));
     const clearScheduledTimeout =
@@ -179,6 +186,20 @@
       return pendingTranslation;
     }
 
+    // Translating completed sentences separately lets growing captions reuse cached
+    // sentence translations, so only the unfinished tail needs a new request.
+    function getChunkedTranslation(text) {
+      const chunks = sentenceChunking ? splitIntoSentences(text) : [text];
+
+      if (chunks.length < 2) {
+        return getTranslation(text);
+      }
+
+      return Promise.all(chunks.map(getTranslation)).then((translations) =>
+        translations.map(normalizeCaptionText).filter(Boolean).join(" ")
+      );
+    }
+
     function setEnabled(enabled) {
       const normalizedEnabled = enabled !== false;
 
@@ -221,7 +242,7 @@
     function requestTranslation(normalizedCaptionText, requestId, handlers) {
       const cacheGeneration = translationCacheGeneration;
 
-      getTranslation(normalizedCaptionText)
+      getChunkedTranslation(normalizedCaptionText)
         .then((translation) => {
           if (
             !isEnabled ||
