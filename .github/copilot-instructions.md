@@ -1,10 +1,11 @@
 # Copilot instructions for YouTube Dual Subtitles
 
-## Build, test, and lint commands
+## Build, test, lint, and packaging commands
 
 - Run the full test suite: `npm test`
 - Run one test file: `node --test test\languages.test.js`
 - Run one named test: `node --test --test-name-pattern "normalizes source and target languages" test\languages.test.js`
+- **Package for Chrome Web Store upload**: `npm run package` — Creates `dist/youtube-dual-subtitles-<version>.zip` with all required files (manifest.json, src/, icons/, assets/, etc.). Use this exact command for store submissions.
 
 The extension is loaded directly from the repository as an unpacked Chrome/Brave extension. There is no bundler step; `manifest.json` lists the source files that the browser loads.
 
