@@ -25,7 +25,7 @@ Copilot Session: 292adaa1-edad-49ae-b96c-b97409ec8ed0
   - `128x128` PNG, required for Chrome Web Store upload.
 - Runtime support icon included:
   - `assets/coffee.svg`
-- Create a ZIP with `manifest.json` at the ZIP root.
+- Create a ZIP with `manifest.json` at the ZIP root by running `npm run package` (see [`testing-and-release.md`](testing-and-release.md)).
 
 ## Store listing draft
 

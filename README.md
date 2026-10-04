@@ -20,7 +20,7 @@ While enabled, YouTube's native caption layer is hidden so only the extension's 
    - Brave: `brave://extensions/`
 2. Enable **Developer mode**.
 3. Click **Load unpacked**.
-4. Select this project folder: `C:\Dev_Personal\youtube-lang`.
+4. Select this repository folder (the one containing `manifest.json`).
 5. After code changes, click **Update** on the extensions page.
 6. Refresh YouTube.
 7. Click the extension icon to toggle dual subtitles on or off.
@@ -33,9 +33,15 @@ While enabled, YouTube's native caption layer is hidden so only the extension's 
 - `src/languages.js` - Defines shared source and target language options.
 - `src/overlaySettings.js` - Defines shared overlay display settings.
 - `src/overlayPosition.js` - Calculates the overlay position relative to the YouTube player.
+- `src/translationState.js` - Caches translations, debounces caption changes, and handles stale results.
+- `src/translationFetch.js` - Builds Google Translate requests and parses responses.
+- `src/translationErrors.js` - Formats translation errors for display.
+- `src/summarizer.js` - Local extractive summary of recent subtitle history.
 - `background.js` - Calls Google Translate from the extension service worker.
 - `popup.html` - Extension popup UI.
 - `popup.js` - Saves the on/off, source language, target language, and position settings.
+- `assets/` - Static assets used by the README and popup.
+- `scripts/package.js` - Builds the Chrome Web Store ZIP.
 
 ## Tests
 
@@ -44,6 +50,16 @@ Run the Node unit tests with:
 ```powershell
 npm test
 ```
+
+See [`docs/testing-and-release.md`](docs/testing-and-release.md) for the manual test checklist.
+
+## Packaging and publishing
+
+```powershell
+npm run package
+```
+
+This creates `dist\youtube-dual-subtitles-<version>.zip` for upload to the Chrome Web Store. See [`docs/testing-and-release.md`](docs/testing-and-release.md) for the full release steps and [`docs/chrome-web-store-checklist.md`](docs/chrome-web-store-checklist.md) for listing requirements.
 
 ## Privacy
 
